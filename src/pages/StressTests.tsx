@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { History, ChevronRight, ArrowLeft, AlertTriangle, Shield, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
+import DotComSimulation from "@/components/stress-test/DotComSimulation";
 
 interface Scenario {
   year: string;
@@ -147,7 +148,7 @@ const StressTests = () => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.1 }}
                   onClick={() => enterScenario(i)}
-                  className="rounded-xl border border-border bg-gradient-card p-6 text-left hover:border-muted-foreground/30 transition-all group"
+                  className="rounded-xl border border-border bg-card p-6 text-left hover:border-muted-foreground/30 transition-all group"
                 >
                   <p className="text-3xl font-serif text-primary/60 mb-2">{s.year}</p>
                   <h3 className="font-serif text-lg text-foreground mb-1">{s.name}</h3>
@@ -159,6 +160,8 @@ const StressTests = () => {
                 </motion.button>
               ))}
             </motion.div>
+          ) : activeScenario === 0 ? (
+            <DotComSimulation onBack={() => setActiveScenario(null)} />
           ) : scenario && !showSummary ? (
             <motion.div key="narrative" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <button onClick={() => setActiveScenario(null)} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6">
