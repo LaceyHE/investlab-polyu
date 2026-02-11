@@ -27,25 +27,29 @@ const coreModules = [
     title: "Entering Real Stock Universes",
     description: "Explore real stock pools (S&P 500, Nasdaq 100) with simplified, strategy-relevant labels only.",
     icon: <BarChart3 className="h-5 w-5" />,
-    status: "locked" as const,
+    status: "available" as const,
+    to: "/module/3",
   },
   {
     title: "Strategy-Bound Decisions",
     description: "Every portfolio action must be tied to a declared strategy: Buy & Hold, Trend Following, or Mean Reversion.",
     icon: <Crosshair className="h-5 w-5" />,
-    status: "locked" as const,
+    status: "available" as const,
+    to: "/module/4",
   },
   {
     title: "Portfolio-Level Thinking",
     description: "Shift focus from individual stocks to allocation, volatility, drawdown, and strategy mix.",
     icon: <PieChart className="h-5 w-5" />,
-    status: "locked" as const,
+    status: "available" as const,
+    to: "/module/5",
   },
   {
     title: "Reflection & Feedback",
     description: "Receive an automatic learning summary revealing your strategy patterns and behavioral insights.",
     icon: <ClipboardCheck className="h-5 w-5" />,
-    status: "locked" as const,
+    status: "available" as const,
+    to: "/module/6",
   },
 ];
 
