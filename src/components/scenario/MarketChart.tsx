@@ -1,7 +1,7 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  ReferenceLine, CartesianGrid
+  ReferenceLine, CartesianGrid, Line
 } from "recharts";
 import { PricePoint, aggregateData, computeDrawdown, computeRollingVolatility, suggestAggregation, TimeAggregation } from "@/hooks/useMarketData";
 import type { ScenarioEvent } from "@/data/scenario-presets";
@@ -15,8 +15,12 @@ interface MarketChartProps {
   onAggregationChange: (agg: TimeAggregation) => void;
   showDrawdown: boolean;
   showVolatility: boolean;
+  showSharpe?: boolean;
   onToggleDrawdown: () => void;
   onToggleVolatility: () => void;
+  onToggleSharpe?: () => void;
+  rollingSharpe?: number[];
+  portfolioDrawdown?: number[];
 }
 
 const MarketChart = ({
@@ -28,8 +32,12 @@ const MarketChart = ({
   onAggregationChange,
   showDrawdown,
   showVolatility,
+  showSharpe = false,
   onToggleDrawdown,
   onToggleVolatility,
+  onToggleSharpe,
+  rollingSharpe = [],
+  portfolioDrawdown = [],
 }: MarketChartProps) => {
   const volatility = useMemo(() => computeRollingVolatility(indexData), [indexData]);
   const suggestedAgg = useMemo(() => suggestAggregation(volatility), [volatility]);
@@ -38,7 +46,6 @@ const MarketChart = ({
   const aggregatedData = useMemo(() => aggregateData(indexData, aggregation), [indexData, aggregation]);
   const drawdown = useMemo(() => computeDrawdown(aggregatedData), [aggregatedData]);
 
-  // Filter to current date
   const visibleData = useMemo(() => {
     return aggregatedData
       .filter(d => d.date <= currentDate)
@@ -50,14 +57,13 @@ const MarketChart = ({
           nav: navPoint?.value,
           drawdown: drawdown[i] || 0,
           vol: volatility[i] || 0,
+          sharpe: rollingSharpe[i] ?? null,
+          portfolioDD: portfolioDrawdown[i] ?? null,
         };
       });
-  }, [aggregatedData, currentDate, navHistory, drawdown, volatility]);
+  }, [aggregatedData, currentDate, navHistory, drawdown, volatility, rollingSharpe, portfolioDrawdown]);
 
-  // Visible events
-  const visibleEvents = useMemo(() => {
-    return events.filter(e => e.date <= currentDate);
-  }, [events, currentDate]);
+  const visibleEvents = useMemo(() => events.filter(e => e.date <= currentDate), [events, currentDate]);
 
   const formatDate = (date: string) => {
     const d = new Date(date);
@@ -80,9 +86,6 @@ const MarketChart = ({
     );
   }
 
-  // Normalize index to start at first value
-  const baseIndex = visibleData[0].index;
-
   return (
     <div className="rounded-xl border border-border bg-card p-4">
       {/* Controls */}
@@ -93,9 +96,7 @@ const MarketChart = ({
               key={agg}
               onClick={() => onAggregationChange(agg)}
               className={`px-3 py-1 text-xs rounded-lg transition-colors ${
-                aggregation === agg
-                  ? 'bg-secondary text-foreground'
-                  : 'text-muted-foreground hover:text-foreground'
+                aggregation === agg ? 'bg-secondary text-foreground' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               {agg.charAt(0).toUpperCase() + agg.slice(1)}
@@ -119,10 +120,19 @@ const MarketChart = ({
           >
             Volatility
           </button>
+          {onToggleSharpe && (
+            <button
+              onClick={onToggleSharpe}
+              className={`px-3 py-1 text-xs rounded-lg transition-colors ${
+                showSharpe ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Sharpe
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Main chart */}
       <div className="h-[300px] md:h-[400px]">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={visibleData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
@@ -139,6 +149,10 @@ const MarketChart = ({
                 <stop offset="0%" stopColor="hsl(var(--destructive))" stopOpacity={0} />
                 <stop offset="100%" stopColor="hsl(var(--destructive))" stopOpacity={0.3} />
               </linearGradient>
+              <linearGradient id="portfolioDDGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="hsl(var(--warm))" stopOpacity={0} />
+                <stop offset="100%" stopColor="hsl(var(--warm))" stopOpacity={0.2} />
+              </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
             <XAxis
@@ -154,14 +168,14 @@ const MarketChart = ({
               stroke="hsl(var(--border))"
               tickFormatter={v => v.toLocaleString()}
             />
-            {showDrawdown && (
+            {(showDrawdown || (showSharpe && rollingSharpe.length > 0)) && (
               <YAxis
                 yAxisId="dd"
                 orientation="right"
-                tick={{ fontSize: 10, fill: 'hsl(var(--destructive))' }}
-                stroke="hsl(var(--destructive))"
-                tickFormatter={v => `${v.toFixed(0)}%`}
-                domain={['dataMin', 0]}
+                tick={{ fontSize: 10, fill: showSharpe ? 'hsl(var(--primary))' : 'hsl(var(--destructive))' }}
+                stroke={showSharpe ? 'hsl(var(--primary))' : 'hsl(var(--destructive))'}
+                tickFormatter={v => showSharpe ? v.toFixed(1) : `${v.toFixed(0)}%`}
+                domain={showSharpe ? ['auto', 'auto'] : ['dataMin', 0]}
               />
             )}
             <Tooltip
@@ -175,48 +189,34 @@ const MarketChart = ({
               formatter={(value: number, name: string) => {
                 if (name === 'index') return [value.toLocaleString(undefined, { maximumFractionDigits: 0 }), 'Index'];
                 if (name === 'nav') return [`$${value.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, 'Portfolio'];
-                if (name === 'drawdown') return [`${value.toFixed(1)}%`, 'Drawdown'];
+                if (name === 'drawdown') return [`${value.toFixed(1)}%`, 'Index Drawdown'];
+                if (name === 'portfolioDD') return [`${value.toFixed(1)}%`, 'Portfolio DD'];
+                if (name === 'sharpe') return [value.toFixed(2), 'Rolling Sharpe'];
                 return [value.toFixed(2), name];
               }}
               labelFormatter={formatDate}
             />
 
-            {/* Index price */}
-            <Area
-              yAxisId="price"
-              type="monotone"
-              dataKey="index"
-              stroke="hsl(var(--primary))"
-              strokeWidth={2}
-              fill="url(#indexGradient)"
-            />
+            <Area yAxisId="price" type="monotone" dataKey="index" stroke="hsl(var(--primary))" strokeWidth={2} fill="url(#indexGradient)" />
 
-            {/* Portfolio NAV */}
             {navHistory.length > 0 && (
-              <Area
-                yAxisId="price"
-                type="monotone"
-                dataKey="nav"
-                stroke="hsl(var(--teal))"
-                strokeWidth={2}
-                fill="url(#navGradient)"
-                connectNulls
-              />
+              <Area yAxisId="price" type="monotone" dataKey="nav" stroke="hsl(var(--teal))" strokeWidth={2} fill="url(#navGradient)" connectNulls />
             )}
 
-            {/* Drawdown */}
             {showDrawdown && (
-              <Area
-                yAxisId="dd"
-                type="monotone"
-                dataKey="drawdown"
-                stroke="hsl(var(--destructive))"
-                strokeWidth={1}
-                fill="url(#drawdownGradient)"
-              />
+              <Area yAxisId="dd" type="monotone" dataKey="drawdown" stroke="hsl(var(--destructive))" strokeWidth={1} fill="url(#drawdownGradient)" />
             )}
 
-            {/* Event markers */}
+            {/* Portfolio drawdown shading */}
+            {showDrawdown && portfolioDrawdown.length > 0 && (
+              <Area yAxisId="dd" type="monotone" dataKey="portfolioDD" stroke="hsl(var(--warm))" strokeWidth={1} fill="url(#portfolioDDGradient)" connectNulls />
+            )}
+
+            {/* Rolling Sharpe overlay */}
+            {showSharpe && rollingSharpe.length > 0 && (
+              <Line yAxisId="dd" type="monotone" dataKey="sharpe" stroke="hsl(var(--primary))" strokeWidth={1.5} dot={false} connectNulls />
+            )}
+
             {visibleEvents.map((event, i) => (
               <ReferenceLine
                 key={i}
@@ -225,30 +225,18 @@ const MarketChart = ({
                 stroke={eventColors[event.type] || 'hsl(var(--muted-foreground))'}
                 strokeDasharray="3 3"
                 strokeWidth={1}
-                label={{
-                  value: '●',
-                  position: 'top',
-                  fill: eventColors[event.type],
-                  fontSize: 10,
-                }}
+                label={{ value: '●', position: 'top', fill: eventColors[event.type], fontSize: 10 }}
               />
             ))}
           </AreaChart>
         </ResponsiveContainer>
       </div>
 
-      {/* Event legend */}
       {visibleEvents.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-2">
           {visibleEvents.slice(-3).map((event, i) => (
-            <div
-              key={i}
-              className="flex items-center gap-1.5 text-xs text-muted-foreground"
-            >
-              <span
-                className="h-2 w-2 rounded-full"
-                style={{ backgroundColor: eventColors[event.type] }}
-              />
+            <div key={i} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <span className="h-2 w-2 rounded-full" style={{ backgroundColor: eventColors[event.type] }} />
               <span>{event.label}</span>
             </div>
           ))}
