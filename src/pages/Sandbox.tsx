@@ -58,6 +58,13 @@ const sliderConfigs: Record<StrategyType, SliderConfig> = {
       return `${months}-month lookback`;
     },
   },
+  custom: {
+    label: 'Portfolio',
+    leftLabel: '',
+    rightLabel: '',
+    defaultValue: 0,
+    formatValue: () => 'Custom',
+  },
 };
 
 // ── Main Component ──────────────────────────────────────────────────────────
