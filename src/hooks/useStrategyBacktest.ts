@@ -336,7 +336,7 @@ function backtestMomentum(spy: DailyPrice[], horizon: number): BacktestResult {
 
 // ── Main Hook ──────────────────────────────────────────────────────────────
 
-export type StrategyType = 'allocation' | 'trend' | 'income' | 'momentum';
+export type StrategyType = 'allocation' | 'trend' | 'income' | 'momentum' | 'custom';
 
 export function useStrategyBacktest(
   strategy: StrategyType,

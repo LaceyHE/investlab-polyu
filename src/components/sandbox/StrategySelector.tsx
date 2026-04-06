@@ -44,6 +44,14 @@ export const strategies: StrategyDef[] = [
     icon: '🔴',
     takeaway: 'Short-term strategies are exciting but unstable.',
   },
+  {
+    id: 'custom',
+    name: 'Build Your Own',
+    subtitle: 'Custom Portfolio',
+    color: 'hsl(var(--primary))',
+    icon: '🧩',
+    takeaway: 'Building a diversified portfolio across different sectors and asset classes helps reduce risk.',
+  },
 ];
 
 interface Props {
