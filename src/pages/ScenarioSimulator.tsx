@@ -5,7 +5,6 @@ import { Link } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import ScenarioCard from "@/components/scenario/ScenarioCard";
 import MarketChart from "@/components/scenario/MarketChart";
-import PortfolioBuilder from "@/components/scenario/PortfolioBuilder";
 import DotComSidePanel from "@/components/scenario/DotComSidePanel";
 import TimelineScrubber from "@/components/scenario/TimelineScrubber";
 import AnalyticsPanel from "@/components/scenario/AnalyticsPanel";
@@ -17,7 +16,7 @@ import { scenarioPresets, type ScenarioPreset } from "@/data/scenario-presets";
 import { useMarketData, type TimeAggregation } from "@/hooks/useMarketData";
 import { useScenarioSimulation } from "@/hooks/useScenarioSimulation";
 import { usePushMessages } from "@/hooks/usePushMessages";
-import { dotcomStocks } from "@/data/dotcom-stocks";
+import { getStocksForScenario, getIndustriesForScenario } from "@/data/scenario-stocks";
 
 const ScenarioSimulator = () => {
   const [selectedScenario, setSelectedScenario] = useState<ScenarioPreset | null>(null);
@@ -26,13 +25,13 @@ const ScenarioSimulator = () => {
   const [showVolatility, setShowVolatility] = useState(false);
   const [showSharpe, setShowSharpe] = useState(false);
 
-  const isDotCom = selectedScenario?.id === 'dotcom';
+  const scenarioStocks = useMemo(() => selectedScenario ? getStocksForScenario(selectedScenario.id) : [], [selectedScenario]);
+  const scenarioIndustries = useMemo(() => selectedScenario ? getIndustriesForScenario(selectedScenario.id) : [], [selectedScenario]);
 
   const allTickers = useMemo(() => {
     if (!selectedScenario) return [];
-    if (isDotCom) return [selectedScenario.indexTicker, ...dotcomStocks.map(s => s.ticker)];
-    return [selectedScenario.indexTicker, ...selectedScenario.tickers];
-  }, [selectedScenario, isDotCom]);
+    return [selectedScenario.indexTicker, ...scenarioStocks.map(s => s.ticker)];
+  }, [selectedScenario, scenarioStocks]);
 
   const { data: marketData, isLoading: isLoadingData } = useMarketData(
     allTickers, selectedScenario?.startDate || '', selectedScenario?.endDate || '',
@@ -69,7 +68,8 @@ const ScenarioSimulator = () => {
     positions: simulation.state.positions,
     metrics: simulation.metrics,
     currentEvent,
-    enabled: !!selectedScenario && isDotCom,
+    enabled: !!selectedScenario,
+    stocks: scenarioStocks,
   });
 
   const indexData = marketData?.[selectedScenario?.indexTicker || ''] || [];
@@ -136,24 +136,7 @@ const ScenarioSimulator = () => {
               </div>
 
               {/* Push messages */}
-              {isDotCom && <PushMessages messages={pushMessages} onDismiss={dismissMessage} />}
-
-              {/* Event badge (for non-dotcom or when no push messages) */}
-              {currentEvent && !isDotCom && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className={`rounded-lg border p-3 mb-4 ${
-                    currentEvent.type === 'crash' ? 'border-destructive/30 bg-destructive/5' :
-                    currentEvent.type === 'recovery' ? 'border-teal/30 bg-teal/5' :
-                    currentEvent.type === 'fed' ? 'border-primary/30 bg-primary/5' :
-                    'border-warm/30 bg-warm/5'
-                  }`}
-                >
-                  <p className="text-sm font-medium text-foreground">{currentEvent.label}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">{currentEvent.description}</p>
-                </motion.div>
-              )}
+              <PushMessages messages={pushMessages} onDismiss={dismissMessage} />
 
               {isLoadingData ? (
                 <div className="flex items-center justify-center py-20 text-muted-foreground">
@@ -182,7 +165,7 @@ const ScenarioSimulator = () => {
                       </div>
 
                       {/* Analytics */}
-                      <AnalyticsPanel metrics={simulation.metrics} positions={simulation.state.positions} />
+                      <AnalyticsPanel metrics={simulation.metrics} positions={simulation.state.positions} stocks={scenarioStocks} />
 
                       {/* Chart */}
                       <MarketChart
@@ -219,24 +202,15 @@ const ScenarioSimulator = () => {
 
                     {/* Sidebar — sticky with viewport-capped height, scrolls internally */}
                     <div className="lg:sticky lg:top-20 lg:self-start lg:h-[calc(100vh-6rem)] lg:overflow-hidden">
-                      {isDotCom ? (
-                        <DotComSidePanel
-                          positions={simulation.state.positions}
-                          cashWeight={simulation.state.cashWeight}
-                          marketData={marketData}
-                          currentDate={simulation.currentDate}
-                          onUpdatePosition={simulation.updatePosition}
-                        />
-                      ) : (
-                        <PortfolioBuilder
-                          availableTickers={selectedScenario.tickers}
-                          positions={simulation.state.positions}
-                          cashWeight={simulation.state.cashWeight}
-                          marketData={marketData}
-                          currentDate={simulation.currentDate}
-                          onUpdatePosition={simulation.updatePosition}
-                        />
-                      )}
+                      <DotComSidePanel
+                        positions={simulation.state.positions}
+                        cashWeight={simulation.state.cashWeight}
+                        marketData={marketData}
+                        currentDate={simulation.currentDate}
+                        onUpdatePosition={simulation.updatePosition}
+                        stocks={scenarioStocks}
+                        industries={scenarioIndustries}
+                      />
                     </div>
                   </div>
 
@@ -247,16 +221,17 @@ const ScenarioSimulator = () => {
                     positions={simulation.state.positions}
                     metrics={simulation.metrics}
                     recentEvents={recentEvents}
-                    autoTrigger={isDotCom}
+                    autoTrigger={true}
                   />
 
-                  {/* Learning Outcomes: personalized for dot-com, static for others */}
-                  {isDotCom && isAtEnd && simulation.state.positions.length > 0 ? (
+                  {/* Learning Outcomes: personalized when at end with positions, static otherwise */}
+                  {isAtEnd && simulation.state.positions.length > 0 ? (
                     <PersonalizedOutcomes
                       scenario={selectedScenario}
                       positions={simulation.state.positions}
                       metrics={simulation.metrics}
                       currentDate={simulation.currentDate}
+                      stocks={scenarioStocks}
                     />
                   ) : (
                     <LearningOutcomes scenario={selectedScenario} />
