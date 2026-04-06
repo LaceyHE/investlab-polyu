@@ -1,5 +1,8 @@
+import { useState, useEffect } from "react";
 import { Play, Pause, SkipForward } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Slider } from "@/components/ui/slider";
+import type { ScenarioEvent } from "@/data/scenario-presets";
 
 interface TimelineScrubberProps {
   currentIndex: number;
@@ -12,6 +15,7 @@ interface TimelineScrubberProps {
   onScrub: (index: number) => void;
   onTogglePlay: () => void;
   onSetSpeed: (speed: number) => void;
+  currentEvent?: ScenarioEvent | null;
 }
 
 const TimelineScrubber = ({
@@ -25,18 +29,42 @@ const TimelineScrubber = ({
   onScrub,
   onTogglePlay,
   onSetSpeed,
+  currentEvent,
 }: TimelineScrubberProps) => {
+  const [flashEvent, setFlashEvent] = useState<ScenarioEvent | null>(null);
+
+  // Flash event description when timeline crosses an event
+  useEffect(() => {
+    if (currentEvent && isPlaying) {
+      setFlashEvent(currentEvent);
+      const timer = setTimeout(() => setFlashEvent(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [currentEvent?.date, isPlaying]);
+
   const formatDate = (date: string) => {
     const d = new Date(date);
     return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
   };
 
-  const progress = totalDates > 0 ? (currentIndex / (totalDates - 1)) * 100 : 0;
-
   return (
-    <div className="rounded-xl border border-border bg-card p-4">
+    <div className="rounded-xl border border-border bg-card p-4 space-y-2">
+      {/* Event flash */}
+      <AnimatePresence>
+        {flashEvent && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="rounded-lg bg-primary/10 border border-primary/20 p-2 text-xs text-foreground"
+          >
+            <span className="font-medium">{flashEvent.label}</span>
+            <span className="text-muted-foreground ml-1">— {flashEvent.description}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="flex items-center gap-4">
-        {/* Play controls */}
         <div className="flex items-center gap-2">
           <button
             onClick={onTogglePlay}
@@ -52,7 +80,6 @@ const TimelineScrubber = ({
           </button>
         </div>
 
-        {/* Timeline slider */}
         <div className="flex-1">
           <Slider
             value={[currentIndex]}
@@ -63,16 +90,13 @@ const TimelineScrubber = ({
           />
         </div>
 
-        {/* Speed control */}
         <div className="flex items-center gap-1">
           {[1, 2, 5].map(speed => (
             <button
               key={speed}
               onClick={() => onSetSpeed(speed)}
               className={`px-2 py-1 text-xs rounded-lg transition-colors ${
-                playSpeed === speed
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:text-foreground'
+                playSpeed === speed ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               {speed}x
@@ -81,8 +105,7 @@ const TimelineScrubber = ({
         </div>
       </div>
 
-      {/* Date labels */}
-      <div className="flex justify-between mt-2 text-xs text-muted-foreground">
+      <div className="flex justify-between text-xs text-muted-foreground">
         <span>{formatDate(startDate)}</span>
         <span className="font-medium text-foreground">{formatDate(currentDate)}</span>
         <span>{formatDate(endDate)}</span>

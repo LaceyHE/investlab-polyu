@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Loader2, ChevronDown, ChevronUp } from "lucide-react";
+import { Sparkles, Loader2, ChevronDown, ChevronUp, AlertTriangle, Lightbulb, BarChart3 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
 import type { PortfolioMetrics, Position } from "@/hooks/useScenarioSimulation";
@@ -12,6 +12,7 @@ interface AICommentaryProps {
   positions: Position[];
   metrics: PortfolioMetrics;
   recentEvents: ScenarioEvent[];
+  autoTrigger?: boolean;
 }
 
 const AICommentary = ({
@@ -20,11 +21,27 @@ const AICommentary = ({
   positions,
   metrics,
   recentEvents,
+  autoTrigger = false,
 }: AICommentaryProps) => {
   const [commentary, setCommentary] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isExpanded, setIsExpanded] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const lastAutoTrigger = useRef(0);
+  const prevPositionsCount = useRef(positions.length);
+
+  // Auto-trigger on significant changes (30s cooldown)
+  useEffect(() => {
+    if (!autoTrigger || positions.length === 0) return;
+    const now = Date.now();
+    const positionsChanged = positions.length !== prevPositionsCount.current;
+    prevPositionsCount.current = positions.length;
+
+    if (positionsChanged && now - lastAutoTrigger.current > 30000) {
+      lastAutoTrigger.current = now;
+      fetchCommentary();
+    }
+  }, [positions.length, autoTrigger]);
 
   const fetchCommentary = async () => {
     setIsLoading(true);
@@ -51,28 +68,47 @@ const AICommentary = ({
             sharpe: metrics.sharpeRatio.toFixed(2),
             volatility: metrics.volatility.toFixed(1),
             netExposure: metrics.netExposure.toFixed(0),
+            worstQuarter: metrics.worstQuarter.toFixed(1),
           },
           recentEvents: eventsDesc,
         },
       });
 
-      if (response.error) {
-        throw new Error(response.error.message);
-      }
-
+      if (response.error) throw new Error(response.error.message);
       setCommentary(response.data?.commentary || 'No commentary available.');
     } catch (err: any) {
-      if (err.message?.includes('429')) {
-        setError('Rate limit reached. Please try again in a moment.');
-      } else if (err.message?.includes('402')) {
-        setError('AI credits exhausted. Add funds in Settings → Workspace → Usage.');
-      } else {
-        setError('Unable to generate commentary. Try again later.');
-      }
+      if (err.message?.includes('429')) setError('Rate limit reached. Please try again in a moment.');
+      else if (err.message?.includes('402')) setError('AI credits exhausted. Add funds in Settings → Workspace → Usage.');
+      else setError('Unable to generate commentary. Try again later.');
     } finally {
       setIsLoading(false);
     }
   };
+
+  // Parse structured sections from commentary
+  const renderCommentary = (text: string) => (
+    <ReactMarkdown
+      components={{
+        p: ({ children }) => <p className="text-sm text-muted-foreground leading-relaxed mb-2">{children}</p>,
+        strong: ({ children }) => {
+          const str = String(children);
+          let Icon = BarChart3;
+          if (str.includes('Market Context')) Icon = BarChart3;
+          else if (str.includes('Risk') || str.includes('Warning')) Icon = AlertTriangle;
+          else if (str.includes('Insight') || str.includes('Suggestion')) Icon = Lightbulb;
+          return (
+            <strong className="text-foreground inline-flex items-center gap-1">
+              <Icon className="h-3 w-3" />
+              {children}
+            </strong>
+          );
+        },
+        ul: ({ children }) => <ul className="text-sm text-muted-foreground space-y-1 list-disc pl-4">{children}</ul>,
+      }}
+    >
+      {text}
+    </ReactMarkdown>
+  );
 
   return (
     <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
@@ -97,7 +133,7 @@ const AICommentary = ({
             {!commentary && !isLoading && !error && (
               <button
                 onClick={fetchCommentary}
-                className="w-full rounded-lg bg-gradient-warm px-4 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity"
+                className="w-full rounded-lg bg-gradient-to-r from-primary to-primary/80 px-4 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity"
               >
                 What's happening here?
               </button>
@@ -106,37 +142,24 @@ const AICommentary = ({
             {isLoading && (
               <div className="flex items-center gap-2 py-3 text-sm text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Analyzing scenario...
+                <div className="space-y-2 flex-1">
+                  <div className="h-3 bg-secondary rounded animate-pulse w-3/4" />
+                  <div className="h-3 bg-secondary rounded animate-pulse w-1/2" />
+                </div>
               </div>
             )}
 
             {error && (
               <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
                 {error}
-                <button
-                  onClick={fetchCommentary}
-                  className="ml-2 underline hover:no-underline"
-                >
-                  Retry
-                </button>
+                <button onClick={fetchCommentary} className="ml-2 underline hover:no-underline">Retry</button>
               </div>
             )}
 
             {commentary && (
               <div className="prose prose-sm max-w-none text-foreground">
-                <ReactMarkdown
-                  components={{
-                    p: ({ children }) => <p className="text-sm text-muted-foreground leading-relaxed mb-2">{children}</p>,
-                    strong: ({ children }) => <strong className="text-foreground">{children}</strong>,
-                    ul: ({ children }) => <ul className="text-sm text-muted-foreground space-y-1 list-disc pl-4">{children}</ul>,
-                  }}
-                >
-                  {commentary}
-                </ReactMarkdown>
-                <button
-                  onClick={fetchCommentary}
-                  className="mt-2 text-xs text-primary hover:underline"
-                >
+                {renderCommentary(commentary)}
+                <button onClick={fetchCommentary} className="mt-2 text-xs text-primary hover:underline">
                   Refresh analysis
                 </button>
               </div>

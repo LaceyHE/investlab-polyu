@@ -6,14 +6,17 @@ import AppLayout from "@/components/AppLayout";
 import ScenarioCard from "@/components/scenario/ScenarioCard";
 import MarketChart from "@/components/scenario/MarketChart";
 import PortfolioBuilder from "@/components/scenario/PortfolioBuilder";
+import DotComSidePanel from "@/components/scenario/DotComSidePanel";
 import TimelineScrubber from "@/components/scenario/TimelineScrubber";
 import AnalyticsPanel from "@/components/scenario/AnalyticsPanel";
 import AICommentary from "@/components/scenario/AICommentary";
 import LearningOutcomes from "@/components/scenario/LearningOutcomes";
-import DotComStockGrid from "@/components/scenario/DotComStockGrid";
+import PersonalizedOutcomes from "@/components/scenario/PersonalizedOutcomes";
+import PushMessages from "@/components/scenario/PushMessages";
 import { scenarioPresets, type ScenarioPreset } from "@/data/scenario-presets";
 import { useMarketData, type TimeAggregation } from "@/hooks/useMarketData";
 import { useScenarioSimulation } from "@/hooks/useScenarioSimulation";
+import { usePushMessages } from "@/hooks/usePushMessages";
 import { dotcomStocks } from "@/data/dotcom-stocks";
 
 const ScenarioSimulator = () => {
@@ -21,28 +24,23 @@ const ScenarioSimulator = () => {
   const [aggregationOverride, setAggregationOverride] = useState<TimeAggregation | null>(null);
   const [showDrawdown, setShowDrawdown] = useState(false);
   const [showVolatility, setShowVolatility] = useState(false);
+  const [showSharpe, setShowSharpe] = useState(false);
 
   const isDotCom = selectedScenario?.id === 'dotcom';
 
-  // For dot-com, use our enriched stock list; others use preset tickers
   const allTickers = useMemo(() => {
     if (!selectedScenario) return [];
-    if (isDotCom) {
-      return [selectedScenario.indexTicker, ...dotcomStocks.map(s => s.ticker)];
-    }
+    if (isDotCom) return [selectedScenario.indexTicker, ...dotcomStocks.map(s => s.ticker)];
     return [selectedScenario.indexTicker, ...selectedScenario.tickers];
   }, [selectedScenario, isDotCom]);
 
   const { data: marketData, isLoading: isLoadingData } = useMarketData(
-    allTickers,
-    selectedScenario?.startDate || '',
-    selectedScenario?.endDate || '',
+    allTickers, selectedScenario?.startDate || '', selectedScenario?.endDate || '',
   );
 
   const allDates = useMemo(() => {
     if (!marketData || !selectedScenario) return [];
-    const indexData = marketData[selectedScenario.indexTicker];
-    return indexData?.map(d => d.date) || [];
+    return marketData[selectedScenario.indexTicker]?.map(d => d.date) || [];
   }, [marketData, selectedScenario]);
 
   const simulation = useScenarioSimulation(marketData, allDates);
@@ -64,8 +62,15 @@ const ScenarioSimulator = () => {
       const current = new Date(simulation.currentDate);
       const diff = Math.abs(current.getTime() - eventDate.getTime()) / (1000 * 60 * 60 * 24);
       return diff <= 7;
-    });
+    }) || null;
   }, [selectedScenario, simulation.currentDate]);
+
+  const { messages: pushMessages, dismissMessage } = usePushMessages({
+    positions: simulation.state.positions,
+    metrics: simulation.metrics,
+    currentEvent,
+    enabled: !!selectedScenario && isDotCom,
+  });
 
   const indexData = marketData?.[selectedScenario?.indexTicker || ''] || [];
 
@@ -74,13 +79,15 @@ const ScenarioSimulator = () => {
     setAggregationOverride(null);
     setShowDrawdown(false);
     setShowVolatility(false);
+    setShowSharpe(false);
     simulation.reset();
   };
+
+  const isAtEnd = simulation.state.currentDateIndex >= allDates.length - 2 && allDates.length > 0;
 
   return (
     <AppLayout>
       <div className="container max-w-7xl py-12 md:py-20">
-        {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-sm text-muted-foreground mb-8">
           <Link to="/learning-path" className="hover:text-foreground transition-colors">Learning Path</Link>
           <ChevronRight className="h-3 w-3" />
@@ -111,7 +118,6 @@ const ScenarioSimulator = () => {
                 <ArrowLeft className="h-4 w-4" /> Back to scenarios
               </button>
 
-              {/* Header */}
               <div className="flex items-start justify-between mb-6">
                 <div>
                   <h1 className="font-serif text-2xl text-foreground mb-1">{selectedScenario.name}</h1>
@@ -129,8 +135,11 @@ const ScenarioSimulator = () => {
                 </div>
               </div>
 
-              {/* Event badge */}
-              {currentEvent && (
+              {/* Push messages */}
+              {isDotCom && <PushMessages messages={pushMessages} onDismiss={dismissMessage} />}
+
+              {/* Event badge (for non-dotcom or when no push messages) */}
+              {currentEvent && !isDotCom && (
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -155,10 +164,9 @@ const ScenarioSimulator = () => {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {/* Top section: chart + portfolio sidebar */}
                   <div className="grid gap-4 lg:grid-cols-[1fr_340px]">
                     <div className="space-y-4">
-                      {/* Market Dashboard Stats */}
+                      {/* Stats */}
                       <div className="grid grid-cols-4 gap-2">
                         {[
                           { label: 'Index', value: indexData.find(d => d.date <= simulation.currentDate)?.close?.toLocaleString(undefined, { maximumFractionDigits: 0 }) || '—' },
@@ -182,8 +190,12 @@ const ScenarioSimulator = () => {
                         onAggregationChange={setAggregationOverride}
                         showDrawdown={showDrawdown}
                         showVolatility={showVolatility}
+                        showSharpe={showSharpe}
                         onToggleDrawdown={() => setShowDrawdown(!showDrawdown)}
                         onToggleVolatility={() => setShowVolatility(!showVolatility)}
+                        onToggleSharpe={() => setShowSharpe(!showSharpe)}
+                        rollingSharpe={simulation.rollingSharpe}
+                        portfolioDrawdown={simulation.portfolioDrawdown}
                       />
 
                       <TimelineScrubber
@@ -197,39 +209,33 @@ const ScenarioSimulator = () => {
                         onScrub={simulation.setDateIndex}
                         onTogglePlay={() => simulation.setIsPlaying(!simulation.isPlaying)}
                         onSetSpeed={simulation.setPlaySpeed}
+                        currentEvent={currentEvent}
                       />
                     </div>
 
                     {/* Sidebar */}
                     <div className="space-y-4">
-                      <PortfolioBuilder
-                        availableTickers={isDotCom ? dotcomStocks.map(s => s.ticker) : selectedScenario.tickers}
-                        positions={simulation.state.positions}
-                        cashWeight={simulation.state.cashWeight}
-                        marketData={marketData}
-                        currentDate={simulation.currentDate}
-                        onUpdatePosition={simulation.updatePosition}
-                      />
-                      <AnalyticsPanel metrics={simulation.metrics} />
+                      {isDotCom ? (
+                        <DotComSidePanel
+                          positions={simulation.state.positions}
+                          cashWeight={simulation.state.cashWeight}
+                          marketData={marketData}
+                          currentDate={simulation.currentDate}
+                          onUpdatePosition={simulation.updatePosition}
+                        />
+                      ) : (
+                        <PortfolioBuilder
+                          availableTickers={selectedScenario.tickers}
+                          positions={simulation.state.positions}
+                          cashWeight={simulation.state.cashWeight}
+                          marketData={marketData}
+                          currentDate={simulation.currentDate}
+                          onUpdatePosition={simulation.updatePosition}
+                        />
+                      )}
+                      <AnalyticsPanel metrics={simulation.metrics} positions={simulation.state.positions} />
                     </div>
                   </div>
-
-                  {/* Dot-com: interactive stock grid */}
-                  {isDotCom && (
-                    <div className="space-y-3">
-                      <h2 className="font-serif text-lg text-foreground">Stock Universe</h2>
-                      <p className="text-xs text-muted-foreground">
-                        Browse stocks by industry. Hover for metrics. Build your portfolio by adding positions.
-                      </p>
-                      <DotComStockGrid
-                        marketData={marketData}
-                        currentDate={simulation.currentDate}
-                        positions={simulation.state.positions}
-                        cashWeight={simulation.state.cashWeight}
-                        onUpdatePosition={simulation.updatePosition}
-                      />
-                    </div>
-                  )}
 
                   {/* AI Commentary */}
                   <AICommentary
@@ -238,10 +244,25 @@ const ScenarioSimulator = () => {
                     positions={simulation.state.positions}
                     metrics={simulation.metrics}
                     recentEvents={recentEvents}
+                    autoTrigger={isDotCom}
                   />
 
-                  {/* Learning Outcomes */}
-                  <LearningOutcomes scenario={selectedScenario} />
+                  {/* Learning Outcomes: personalized for dot-com, static for others */}
+                  {isDotCom && isAtEnd && simulation.state.positions.length > 0 ? (
+                    <PersonalizedOutcomes
+                      scenario={selectedScenario}
+                      positions={simulation.state.positions}
+                      metrics={simulation.metrics}
+                      currentDate={simulation.currentDate}
+                    />
+                  ) : (
+                    <LearningOutcomes scenario={selectedScenario} />
+                  )}
+
+                  {/* Transparency note */}
+                  <p className="text-[10px] text-muted-foreground text-center pt-2">
+                    This simulation uses historical market data and is for learning purposes only. Not financial advice.
+                  </p>
                 </div>
               )}
             </motion.div>
