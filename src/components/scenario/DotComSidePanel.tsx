@@ -5,7 +5,7 @@ import { LineChart, Line, ResponsiveContainer, YAxis } from "recharts";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { ScrollArea } from "@/components/ui/scroll-area";
+
 import { dotcomStocks, industries, type DotComStock } from "@/data/dotcom-stocks";
 import type { PricePoint } from "@/hooks/useMarketData";
 import type { Position } from "@/hooks/useScenarioSimulation";
