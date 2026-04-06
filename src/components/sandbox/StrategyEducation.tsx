@@ -99,6 +99,25 @@ const content: Record<StrategyType, StrategyContent> = {
     proTip:
       "Momentum works until it doesn't — always consider what happens when the trend reverses.",
   },
+  custom: {
+    explanation: "You're building your own portfolio by selecting individual assets and choosing how much to invest in each one. This teaches you how diversification works in practice.",
+    worksWell: [
+      "When you spread investments across different sectors and asset classes",
+      "When you include bonds or gold alongside stocks to cushion downturns",
+      "When no single asset dominates your portfolio",
+    ],
+    struggles: [
+      "Concentrated portfolios with too much in one sector",
+      "All-stock portfolios in bear markets",
+      "Ignoring alternative assets like bonds or commodities",
+    ],
+    adjustments: [
+      "Add assets from different categories (stocks, bonds, gold) for better diversification",
+      "Keep individual weights balanced — avoid putting 80%+ into a single asset",
+      "Compare your results against the SPY benchmark to see if diversification helped",
+    ],
+    proTip: "True diversification means owning assets that don't all move in the same direction at the same time.",
+  },
 };
 
 const StrategyEducation = ({ strategy }: StrategyEducationProps) => {

@@ -9,6 +9,7 @@ import StrategyChart from "@/components/sandbox/StrategyChart";
 import MetricsPanel from "@/components/sandbox/MetricsPanel";
 import PortfolioEvaluation from "@/components/sandbox/PortfolioEvaluation";
 import StrategyEducation from "@/components/sandbox/StrategyEducation";
+import CustomPortfolioBuilder from "@/components/sandbox/CustomPortfolioBuilder";
 import { useMarketPrices, useStrategyBacktest, type StrategyType } from "@/hooks/useStrategyBacktest";
 
 // ── Slider config per strategy ──────────────────────────────────────────────
@@ -57,6 +58,13 @@ const sliderConfigs: Record<StrategyType, SliderConfig> = {
       return `${months}-month lookback`;
     },
   },
+  custom: {
+    label: 'Portfolio',
+    leftLabel: '',
+    rightLabel: '',
+    defaultValue: 0,
+    formatValue: () => 'Custom',
+  },
 };
 
 // ── Main Component ──────────────────────────────────────────────────────────
@@ -68,6 +76,7 @@ const Sandbox = () => {
     trend: 0.5,
     income: 0.5,
     momentum: 0.5,
+    custom: 0,
   });
 
   const { data: marketData, isLoading } = useMarketPrices();
@@ -146,7 +155,10 @@ const Sandbox = () => {
                 </div>
               </div>
 
-              {isLoading ? (
+              {/* Custom Portfolio Builder — independent module */}
+              {selectedStrategy === 'custom' ? (
+                <CustomPortfolioBuilder />
+              ) : isLoading ? (
                 <div className="flex items-center justify-center py-20">
                   <div className="text-center">
                     <div className="h-8 w-8 border-2 border-foreground border-t-transparent rounded-full animate-spin mx-auto mb-3" />
