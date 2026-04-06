@@ -141,10 +141,8 @@ const DotComSidePanel = ({
             </div>
           </TabsContent>
 
-        {/* Portfolio Tab */}
-        <TabsContent value="portfolio" className="flex-1 min-h-0 px-4 pb-4 overflow-hidden">
-          <ScrollArea className="h-full">
-            <div className="pr-3">
+          {/* Portfolio Tab */}
+          <TabsContent value="portfolio" className="absolute inset-0 overflow-y-auto px-4 pb-4">
               {/* Sector exposure bar */}
               {sectorExposure.length > 0 && (
                 <div className="mb-3 mt-1">
@@ -232,9 +230,8 @@ const DotComSidePanel = ({
                   Switch to Stocks tab to add positions
                 </div>
               )}
-            </div>
-          </ScrollArea>
-        </TabsContent>
+          </TabsContent>
+        </div>
       </Tabs>
     </div>
   );
