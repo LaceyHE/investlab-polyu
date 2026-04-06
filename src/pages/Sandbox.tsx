@@ -188,13 +188,13 @@ const Sandbox = () => {
                     showSignals={selectedStrategy === 'trend' || selectedStrategy === 'momentum'}
                   />
 
-                  {/* AI Explanation */}
-                  <StrategyAIExplanation
+                  {/* Portfolio Evaluation: Radar + AI */}
+                  <PortfolioEvaluation
+                    result={result}
                     strategy={selectedStrategy}
                     strategyName={strategyDef?.name || ''}
                     param={currentParam}
                     paramLabel={sliderConfig?.formatValue(currentParam) || ''}
-                    result={result}
                   />
 
                   {/* Learning Takeaway */}
