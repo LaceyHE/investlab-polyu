@@ -1,141 +1,72 @@
 
 
-# Enhanced Dot-Com Bubble Scenario — Interactive Educational Module
+# Scenario Module UX Enhancements
 
-## Summary
+## 1. Stock Selection — Fix Overflow & Scrollable Panel
 
-Upgrade the existing Scenario Simulator's Dot-Com preset into a fully interactive, education-first experience with unified stock/portfolio panel, educational push messages, enhanced AI commentary, personalized learning outcomes, and richer visualizations.
+**File**: `src/components/scenario/DotComSidePanel.tsx`
 
----
+- The `TabsContent` for "universe" already has `overflow-y-auto` but the parent container's `max-h-[calc(100vh-200px)]` may clip content. Add `ScrollArea` from radix to both tab panels for smoother scrolling with visible scrollbars.
+- Ensure the filter chips row stays sticky at the top of the universe tab so it doesn't scroll away.
+- Keep existing hover tooltip behavior (Peak Return, P/S Ratio, Avg Volume, Mini Sparkline) unchanged.
 
-## Changes Overview
+## 2. Push Messages — Auto-Dismiss, Centered Popups, More Event Types
 
-### 1. Unified Stock & Portfolio Sidebar
+**Files**: `src/hooks/usePushMessages.ts`, `src/components/scenario/PushMessages.tsx`
 
-**Merge** `DotComStockGrid` (currently below the chart) and `PortfolioBuilder` (sidebar) into a single tabbed sidebar panel for the Dot-Com scenario.
+### Hook changes (`usePushMessages.ts`):
+- Expand message types from `'warning' | 'info' | 'suggestion'` to include `'crash' | 'rally' | 'volatility' | 'bubble'`.
+- Add auto-dismiss: each message gets a `ttl` (e.g., 6 seconds). A `useEffect` interval removes expired messages automatically.
+- Add new trigger conditions:
+  - High volatility detected (volatility > 35%) triggers a "volatility" message.
+  - Timeline event types (`crash`, `rally`, `bubble`) map to matching message types.
 
-- **Tab 1 — Stock Universe**: Industry filter chips + stock tiles with hover sparklines, Peak Return, P/S, Volume. Click "Add" to allocate.
-- **Tab 2 — My Portfolio**: Position cards with weight sliders, entry price, current P&L, sector exposure bar.
-- Allocation bar at the top always visible regardless of active tab.
-- Remove the separate `DotComStockGrid` section from below the chart.
+### Component changes (`PushMessages.tsx`):
+- Render as a **fixed overlay centered on the viewport** (`fixed inset-x-0 top-20 z-50 flex flex-col items-center`).
+- Add more icons: `TrendingDown` (crash), `TrendingUp` (rally), `Activity` (volatility), `Flame` (bubble).
+- Add a progress bar that shrinks over the TTL duration, then auto-removes. No manual dismiss button needed (but keep it as optional).
+- Each message fades in and auto-fades out after TTL.
 
-**File**: Create `src/components/scenario/DotComSidePanel.tsx`
-**Modify**: `src/pages/ScenarioSimulator.tsx` — conditionally render `DotComSidePanel` instead of separate `PortfolioBuilder` + `DotComStockGrid` for the dot-com preset.
+## 3. AI Commentary — Structured Sections with Icons
 
----
+**File**: `src/components/scenario/AICommentary.tsx`
 
-### 2. Educational Push Messages
+- Update the edge function prompt (already structured with `**Market Context**`, `**Portfolio Analysis**`, `**Key Insight**`).
+- In `renderCommentary`, parse markdown headings (`h3`/`h2`) and bold section headers more aggressively:
+  - `Market Context` → `BarChart3` icon + blue-tinted card
+  - `Portfolio Analysis` → `PieChart` icon + neutral card
+  - `Key Insight` / `Risk Warning` → `AlertTriangle` icon + amber card
+  - `Suggestion` → `Lightbulb` icon + green card
+- Wrap each detected section in a visually distinct mini-card with icon, rather than plain markdown.
+- Add metric highlights: detect patterns like `XX%` or `Sharpe X.XX` in text and render them as inline `<span>` badges with monospace font and color coding.
 
-Add a notification system that triggers contextual warnings and suggestions based on portfolio state and timeline position.
+**File**: `supabase/functions/scenario-commentary/index.ts`
+- Refine the system prompt to explicitly request three clearly labeled sections: `## Market Context`, `## Portfolio Analysis`, `## Key Insight`.
+- Add instruction: "Highlight specific metrics inline using bold, e.g., **drawdown of -32%**, **Sharpe of 0.4**."
 
-**Triggers**:
-- Concentration > 50% in one sector → "Your portfolio is concentrated in [industry]. Historically, sector concentration amplified losses during crashes."
-- All positions in "failed" risk category (internal) → "Consider diversifying into less volatile sectors to reduce potential drawdown."
-- High return + high drawdown → "Your portfolio shows high returns, but drawdown reached X%, and Sharpe is only Y, indicating excessive risk."
-- Timeline lands on a major event → "Market this month: [event description]. Consider how your current allocation handles this."
+## 4. Learning Outcomes — Structured with Badges and Actionable Lessons
 
-**Implementation**:
-- Create `src/components/scenario/PushMessages.tsx` — renders animated toast-like cards above the chart area.
-- Logic in a new `src/hooks/usePushMessages.ts` that evaluates positions, metrics, current event, and `dotcom-stocks.ts` risk data to produce messages. Debounced to avoid spam.
+**File**: `src/components/scenario/PersonalizedOutcomes.tsx`
 
----
-
-### 3. Enhanced Analytics Panel with Educational Tooltips
-
-Upgrade `AnalyticsPanel.tsx` to include:
-- Hover tooltips on each metric explaining its significance (e.g., "Sharpe Ratio measures risk-adjusted return. Below 0.5 suggests excessive risk for the returns achieved.")
-- Sector concentration breakdown (pie/bar showing % by industry)
-- Color-coded risk indicators (green/amber/red thresholds)
-
-**Modify**: `src/components/scenario/AnalyticsPanel.tsx`
-
----
-
-### 4. Rolling Sharpe Overlay on Chart
-
-Add a toggleable Rolling Sharpe line to `MarketChart.tsx`:
-- Compute rolling 60-day Sharpe from NAV history in `useScenarioSimulation.ts` (expose as `rollingSharpe` array).
-- Add a third toggle button ("Sharpe") alongside Drawdown and Volatility.
-- Render on a secondary Y-axis.
-
-**Modify**: `src/hooks/useScenarioSimulation.ts`, `src/components/scenario/MarketChart.tsx`
-
----
-
-### 5. AI Commentary Enhancement
-
-Upgrade the edge function and frontend to provide structured, actionable insights:
-
-**Edge function** (`supabase/functions/scenario-commentary/index.ts`):
-- Add sector exposure analysis to the prompt (compute % by industry from positions).
-- Request structured output sections: Market Context, Portfolio Analysis, Risk Warnings, Suggestions.
-- Include worst-quarter and Sharpe in metrics sent.
-- Add instruction to warn about high-return-but-high-risk portfolios.
-
-**Frontend** (`src/components/scenario/AICommentary.tsx`):
-- Auto-trigger commentary on significant portfolio or timeline changes (debounced, not on every tick).
-- Add visual icons/badges for key insight types (risk warning, diversification tip, etc.).
-- Show a "loading" skeleton while generating.
-
----
-
-### 6. Personalized AI Learning Outcomes
-
-Replace static `LearningOutcomes` with AI-generated personalized insights.
-
-**Create**: `src/components/scenario/PersonalizedOutcomes.tsx`
-- Triggered when user reaches end of timeline or clicks "View My Results"
-- Sends full portfolio history, final metrics, trade history to a new edge function call (reuse `scenario-commentary` with a `type: 'summary'` parameter)
-- Displays: Portfolio vs Market comparison, Risk/return trade-offs learned, Visual badges (e.g., "Well-Diversified", "Capital Preserved", "High Risk Exposure", "Concentration Risk")
-- Badges computed client-side from metrics: Sharpe > 0.8 → "Risk-Aware", maxDrawdown < -30% → "High Risk Exposure", positions in 3+ industries → "Well-Diversified"
-
-**Modify**: `supabase/functions/scenario-commentary/index.ts` — add `type` parameter handling for `'summary'` mode with different prompt.
-
----
-
-### 7. Timeline Push Messages per Month
-
-Enhance `TimelineScrubber.tsx` to show contextual messages as the timeline advances:
-- When timeline crosses an event date during playback, briefly flash the event description.
-- Add monthly market summary hints from scenario events data.
-
-**Modify**: `src/components/scenario/TimelineScrubber.tsx`, `src/pages/ScenarioSimulator.tsx`
-
----
-
-### 8. NAV Chart Drawdown Shading for Portfolio
-
-Currently drawdown shading uses the index. Add portfolio-specific drawdown shading:
-- Compute portfolio drawdown from `navHistory` in `useScenarioSimulation.ts`.
-- Pass to `MarketChart` and shade below the NAV line.
-
-**Modify**: `src/hooks/useScenarioSimulation.ts`, `src/components/scenario/MarketChart.tsx`
-
----
+- Reorganize the layout into two columns after badges:
+  - **Left column: Strengths** — green-tinted cards with check icons
+  - **Right column: Areas to Explore** — amber-tinted cards with lightbulb icons
+- Add 3 fixed actionable lesson prompts below the AI summary (always shown, not AI-generated):
+  1. "Compare your return vs. a diversified benchmark"
+  2. "Assess concentration risk and its impact on volatility"
+  3. "Reflect on how defensive allocation could improve your Sharpe ratio"
+- Style badges with tooltip descriptions on hover (already partially implemented — ensure `title` attr works well or switch to `Tooltip` component).
+- Update the edge function summary prompt to explicitly output `**Strengths**` and `**Areas to Explore**` sections (already in the prompt — ensure frontend parses and splits them).
+- Parse the AI response to split at `**Strengths**` and `**Areas to Explore**` headers, rendering each in its respective column rather than as plain markdown.
 
 ## Files Summary
 
 | File | Action |
 |------|--------|
-| `src/components/scenario/DotComSidePanel.tsx` | **Create** — unified stock universe + portfolio panel |
-| `src/components/scenario/PushMessages.tsx` | **Create** — educational notification cards |
-| `src/hooks/usePushMessages.ts` | **Create** — push message trigger logic |
-| `src/components/scenario/PersonalizedOutcomes.tsx` | **Create** — AI-generated learning summary with badges |
-| `src/pages/ScenarioSimulator.tsx` | **Modify** — integrate new panels, remove separate grid |
-| `src/components/scenario/AnalyticsPanel.tsx` | **Modify** — add tooltips, sector breakdown |
-| `src/components/scenario/MarketChart.tsx` | **Modify** — rolling Sharpe overlay, portfolio drawdown |
-| `src/components/scenario/AICommentary.tsx` | **Modify** — auto-trigger, structured display |
-| `src/components/scenario/TimelineScrubber.tsx` | **Modify** — event flash messages |
-| `src/hooks/useScenarioSimulation.ts` | **Modify** — rolling Sharpe, portfolio drawdown arrays |
-| `supabase/functions/scenario-commentary/index.ts` | **Modify** — structured output, summary mode, sector analysis |
-
----
-
-## Technical Notes
-
-- All internal risk classifications (`failed`/`moderate`/`resilient`) remain hidden from UI; only used in push message logic and AI prompts.
-- Push messages are debounced (show max 1 per 10 seconds) to avoid overwhelming users.
-- AI commentary auto-triggers are debounced (30s cooldown) to manage rate limits.
-- Badges in personalized outcomes are computed client-side from metrics thresholds — no AI needed for badge assignment.
-- Existing non-dot-com scenarios continue using the current `PortfolioBuilder` unchanged.
+| `src/components/scenario/DotComSidePanel.tsx` | Modify — add ScrollArea, sticky filters |
+| `src/hooks/usePushMessages.ts` | Modify — add types, TTL auto-dismiss, new triggers |
+| `src/components/scenario/PushMessages.tsx` | Modify — centered overlay, auto-fade, more icons, progress bar |
+| `src/components/scenario/AICommentary.tsx` | Modify — section cards with icons, metric badges |
+| `src/components/scenario/PersonalizedOutcomes.tsx` | Modify — two-column strengths/areas, actionable lessons |
+| `supabase/functions/scenario-commentary/index.ts` | Modify — refined prompt structure |
 
