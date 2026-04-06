@@ -30,7 +30,7 @@ export const useUserProgress = () => {
   const markComplete = useCallback(async (activityType: string, activityId: string, metadata: Record<string, unknown> = {}) => {
     if (!user) return;
     await supabase.from("user_progress").upsert(
-      { user_id: user.id, activity_type: activityType, activity_id: activityId, metadata },
+      { user_id: user.id, activity_type: activityType, activity_id: activityId, metadata } as any,
       { onConflict: "user_id,activity_type,activity_id" }
     );
     await fetchProgress();
