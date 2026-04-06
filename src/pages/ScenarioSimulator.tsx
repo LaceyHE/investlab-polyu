@@ -10,9 +10,11 @@ import TimelineScrubber from "@/components/scenario/TimelineScrubber";
 import AnalyticsPanel from "@/components/scenario/AnalyticsPanel";
 import AICommentary from "@/components/scenario/AICommentary";
 import LearningOutcomes from "@/components/scenario/LearningOutcomes";
+import DotComStockGrid from "@/components/scenario/DotComStockGrid";
 import { scenarioPresets, type ScenarioPreset } from "@/data/scenario-presets";
 import { useMarketData, type TimeAggregation } from "@/hooks/useMarketData";
 import { useScenarioSimulation } from "@/hooks/useScenarioSimulation";
+import { dotcomStocks } from "@/data/dotcom-stocks";
 
 const ScenarioSimulator = () => {
   const [selectedScenario, setSelectedScenario] = useState<ScenarioPreset | null>(null);
@@ -20,11 +22,16 @@ const ScenarioSimulator = () => {
   const [showDrawdown, setShowDrawdown] = useState(false);
   const [showVolatility, setShowVolatility] = useState(false);
 
-  // Fetch market data when a scenario is selected
+  const isDotCom = selectedScenario?.id === 'dotcom';
+
+  // For dot-com, use our enriched stock list; others use preset tickers
   const allTickers = useMemo(() => {
     if (!selectedScenario) return [];
+    if (isDotCom) {
+      return [selectedScenario.indexTicker, ...dotcomStocks.map(s => s.ticker)];
+    }
     return [selectedScenario.indexTicker, ...selectedScenario.tickers];
-  }, [selectedScenario]);
+  }, [selectedScenario, isDotCom]);
 
   const { data: marketData, isLoading: isLoadingData } = useMarketData(
     allTickers,
@@ -32,7 +39,6 @@ const ScenarioSimulator = () => {
     selectedScenario?.endDate || '',
   );
 
-  // Extract all trading dates from index data
   const allDates = useMemo(() => {
     if (!marketData || !selectedScenario) return [];
     const indexData = marketData[selectedScenario.indexTicker];
@@ -41,7 +47,6 @@ const ScenarioSimulator = () => {
 
   const simulation = useScenarioSimulation(marketData, allDates);
 
-  // Recent events relative to current date
   const recentEvents = useMemo(() => {
     if (!selectedScenario) return [];
     return selectedScenario.events.filter(e => {
@@ -52,7 +57,6 @@ const ScenarioSimulator = () => {
     });
   }, [selectedScenario, simulation.currentDate]);
 
-  // Current event badge
   const currentEvent = useMemo(() => {
     if (!selectedScenario) return null;
     return selectedScenario.events.find(e => {
@@ -85,7 +89,6 @@ const ScenarioSimulator = () => {
 
         <AnimatePresence mode="wait">
           {!selectedScenario ? (
-            /* Selection Screen */
             <motion.div key="selection" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <div className="flex items-center gap-3 mb-4">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/15 text-primary">
@@ -96,20 +99,13 @@ const ScenarioSimulator = () => {
               <p className="text-muted-foreground max-w-2xl mb-10">
                 Explore historical market scenarios with real data. Build portfolios, scrub through time, and understand how different environments shape investment outcomes.
               </p>
-
               <div className="grid gap-4 sm:grid-cols-2">
                 {scenarioPresets.map((scenario, i) => (
-                  <ScenarioCard
-                    key={scenario.id}
-                    scenario={scenario}
-                    index={i}
-                    onSelect={() => setSelectedScenario(scenario)}
-                  />
+                  <ScenarioCard key={scenario.id} scenario={scenario} index={i} onSelect={() => setSelectedScenario(scenario)} />
                 ))}
               </div>
             </motion.div>
           ) : (
-            /* Simulation View */
             <motion.div key="simulation" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <button onClick={handleBack} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors">
                 <ArrowLeft className="h-4 w-4" /> Back to scenarios
@@ -158,77 +154,94 @@ const ScenarioSimulator = () => {
                   </div>
                 </div>
               ) : (
-                <div className="grid gap-4 lg:grid-cols-[1fr_340px]">
-                  {/* Main column */}
-                  <div className="space-y-4">
-                    {/* Market Dashboard Stats */}
-                    <div className="grid grid-cols-4 gap-2">
-                      {[
-                        { label: 'Index', value: indexData.find(d => d.date <= simulation.currentDate)?.close?.toLocaleString(undefined, { maximumFractionDigits: 0 }) || '—' },
-                        { label: 'Portfolio NAV', value: `$${simulation.state.currentNav.toLocaleString(undefined, { maximumFractionDigits: 0 })}` },
-                        { label: 'Return', value: `${simulation.metrics.totalReturn >= 0 ? '+' : ''}${simulation.metrics.totalReturn.toFixed(1)}%`, color: simulation.metrics.totalReturn >= 0 ? 'text-teal' : 'text-destructive' },
-                        { label: 'Drawdown', value: `${simulation.metrics.maxDrawdown.toFixed(1)}%`, color: 'text-destructive' },
-                      ].map(stat => (
-                        <div key={stat.label} className="rounded-lg border border-border bg-card p-3 text-center">
-                          <p className="text-xs text-muted-foreground">{stat.label}</p>
-                          <p className={`text-sm font-mono font-medium mt-1 ${(stat as any).color || 'text-foreground'}`}>{stat.value}</p>
-                        </div>
-                      ))}
+                <div className="space-y-4">
+                  {/* Top section: chart + portfolio sidebar */}
+                  <div className="grid gap-4 lg:grid-cols-[1fr_340px]">
+                    <div className="space-y-4">
+                      {/* Market Dashboard Stats */}
+                      <div className="grid grid-cols-4 gap-2">
+                        {[
+                          { label: 'Index', value: indexData.find(d => d.date <= simulation.currentDate)?.close?.toLocaleString(undefined, { maximumFractionDigits: 0 }) || '—' },
+                          { label: 'Portfolio NAV', value: `$${simulation.state.currentNav.toLocaleString(undefined, { maximumFractionDigits: 0 })}` },
+                          { label: 'Return', value: `${simulation.metrics.totalReturn >= 0 ? '+' : ''}${simulation.metrics.totalReturn.toFixed(1)}%`, color: simulation.metrics.totalReturn >= 0 ? 'text-teal' : 'text-destructive' },
+                          { label: 'Drawdown', value: `${simulation.metrics.maxDrawdown.toFixed(1)}%`, color: 'text-destructive' },
+                        ].map(stat => (
+                          <div key={stat.label} className="rounded-lg border border-border bg-card p-3 text-center">
+                            <p className="text-xs text-muted-foreground">{stat.label}</p>
+                            <p className={`text-sm font-mono font-medium mt-1 ${(stat as any).color || 'text-foreground'}`}>{stat.value}</p>
+                          </div>
+                        ))}
+                      </div>
+
+                      <MarketChart
+                        indexData={indexData}
+                        navHistory={simulation.state.navHistory}
+                        events={selectedScenario.events}
+                        currentDate={simulation.currentDate}
+                        aggregationOverride={aggregationOverride}
+                        onAggregationChange={setAggregationOverride}
+                        showDrawdown={showDrawdown}
+                        showVolatility={showVolatility}
+                        onToggleDrawdown={() => setShowDrawdown(!showDrawdown)}
+                        onToggleVolatility={() => setShowVolatility(!showVolatility)}
+                      />
+
+                      <TimelineScrubber
+                        currentIndex={simulation.state.currentDateIndex}
+                        totalDates={allDates.length}
+                        currentDate={simulation.currentDate}
+                        startDate={selectedScenario.startDate}
+                        endDate={selectedScenario.endDate}
+                        isPlaying={simulation.isPlaying}
+                        playSpeed={simulation.playSpeed}
+                        onScrub={simulation.setDateIndex}
+                        onTogglePlay={() => simulation.setIsPlaying(!simulation.isPlaying)}
+                        onSetSpeed={simulation.setPlaySpeed}
+                      />
                     </div>
 
-                    {/* Chart */}
-                    <MarketChart
-                      indexData={indexData}
-                      navHistory={simulation.state.navHistory}
-                      events={selectedScenario.events}
-                      currentDate={simulation.currentDate}
-                      aggregationOverride={aggregationOverride}
-                      onAggregationChange={setAggregationOverride}
-                      showDrawdown={showDrawdown}
-                      showVolatility={showVolatility}
-                      onToggleDrawdown={() => setShowDrawdown(!showDrawdown)}
-                      onToggleVolatility={() => setShowVolatility(!showVolatility)}
-                    />
-
-                    {/* Timeline Scrubber */}
-                    <TimelineScrubber
-                      currentIndex={simulation.state.currentDateIndex}
-                      totalDates={allDates.length}
-                      currentDate={simulation.currentDate}
-                      startDate={selectedScenario.startDate}
-                      endDate={selectedScenario.endDate}
-                      isPlaying={simulation.isPlaying}
-                      playSpeed={simulation.playSpeed}
-                      onScrub={simulation.setDateIndex}
-                      onTogglePlay={() => simulation.setIsPlaying(!simulation.isPlaying)}
-                      onSetSpeed={simulation.setPlaySpeed}
-                    />
-
-                    {/* AI Commentary */}
-                    <AICommentary
-                      scenario={selectedScenario}
-                      currentDate={simulation.currentDate}
-                      positions={simulation.state.positions}
-                      metrics={simulation.metrics}
-                      recentEvents={recentEvents}
-                    />
-
-                    {/* Learning Outcomes */}
-                    <LearningOutcomes scenario={selectedScenario} />
+                    {/* Sidebar */}
+                    <div className="space-y-4">
+                      <PortfolioBuilder
+                        availableTickers={isDotCom ? dotcomStocks.map(s => s.ticker) : selectedScenario.tickers}
+                        positions={simulation.state.positions}
+                        cashWeight={simulation.state.cashWeight}
+                        marketData={marketData}
+                        currentDate={simulation.currentDate}
+                        onUpdatePosition={simulation.updatePosition}
+                      />
+                      <AnalyticsPanel metrics={simulation.metrics} />
+                    </div>
                   </div>
 
-                  {/* Sidebar */}
-                  <div className="space-y-4">
-                    <PortfolioBuilder
-                      availableTickers={selectedScenario.tickers}
-                      positions={simulation.state.positions}
-                      cashWeight={simulation.state.cashWeight}
-                      marketData={marketData}
-                      currentDate={simulation.currentDate}
-                      onUpdatePosition={simulation.updatePosition}
-                    />
-                    <AnalyticsPanel metrics={simulation.metrics} />
-                  </div>
+                  {/* Dot-com: interactive stock grid */}
+                  {isDotCom && (
+                    <div className="space-y-3">
+                      <h2 className="font-serif text-lg text-foreground">Stock Universe</h2>
+                      <p className="text-xs text-muted-foreground">
+                        Browse stocks by industry. Hover for metrics. Build your portfolio by adding positions.
+                      </p>
+                      <DotComStockGrid
+                        marketData={marketData}
+                        currentDate={simulation.currentDate}
+                        positions={simulation.state.positions}
+                        cashWeight={simulation.state.cashWeight}
+                        onUpdatePosition={simulation.updatePosition}
+                      />
+                    </div>
+                  )}
+
+                  {/* AI Commentary */}
+                  <AICommentary
+                    scenario={selectedScenario}
+                    currentDate={simulation.currentDate}
+                    positions={simulation.state.positions}
+                    metrics={simulation.metrics}
+                    recentEvents={recentEvents}
+                  />
+
+                  {/* Learning Outcomes */}
+                  <LearningOutcomes scenario={selectedScenario} />
                 </div>
               )}
             </motion.div>
