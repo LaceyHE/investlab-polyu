@@ -6,7 +6,7 @@ const navItems = [
   { to: "/learning-path", icon: Route, label: "Learning Path" },
   { to: "/sandbox", icon: FlaskConical, label: "Sandbox" },
   { to: "/scenarios", icon: Compass, label: "Scenarios" },
-  { to: "/account", icon: User, label: "Account" },
+  { to: "/account", icon: User, label: "Hub" },
 ];
 
 const AppNav = () => {
