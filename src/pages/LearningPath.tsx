@@ -110,8 +110,8 @@ const LearningPath = () => {
               locked
             />
             <SideModuleCard
-              title="Historical Stress Tests"
-              description="Face the Dot-com bubble, 2008 crisis, COVID crash, and 2022 rate hikes with your strategy knowledge."
+              title="Scenario Simulator"
+              description="Explore historical market scenarios with real data. Build portfolios and understand how environments shape outcomes."
               icon={<History className="h-5 w-5" />}
               variant="stress"
               locked
