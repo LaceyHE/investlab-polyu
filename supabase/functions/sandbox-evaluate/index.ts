@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { strategyName, param, metrics, radarScores } = await req.json();
+    const { strategyName, param, metrics, radarScores, assets } = await req.json();
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
@@ -43,8 +43,15 @@ RULES:
 - Keep it concise (max 200 words total)
 - Be encouraging but honest`;
 
-    const userPrompt = `Strategy: ${strategyName}
-Settings: ${param}
+    let userPrompt = `Strategy: ${strategyName}
+Settings: ${param}`;
+
+    if (assets && Array.isArray(assets) && assets.length > 0) {
+      userPrompt += `\n\nPortfolio Composition:
+${assets.map((a: any) => `- ${a.ticker}: ${a.weight}%`).join('\n')}`;
+    }
+
+    userPrompt += `
 
 Performance Metrics (2021-2022):
 - Total Return: ${metrics.totalReturn}%
