@@ -100,7 +100,7 @@ const DotComSidePanel = ({
         </TabsList>
 
         {/* Stock Universe Tab */}
-        <TabsContent value="universe" className="flex-1 min-h-0 px-4 pb-4 flex flex-col">
+        <TabsContent value="universe" className="flex-1 min-h-0 px-4 pb-4 flex flex-col overflow-hidden">
           {/* Sticky industry filter chips */}
           <div className="flex items-center gap-1.5 flex-wrap mb-3 mt-1 sticky top-0 bg-card z-10 py-1 flex-shrink-0">
             <Filter className="h-3 w-3 text-muted-foreground" />
@@ -125,7 +125,7 @@ const DotComSidePanel = ({
             ))}
           </div>
 
-          <ScrollArea className="flex-1">
+          <ScrollArea className="flex-1 min-h-0">
             <div className="space-y-2 pr-3">
               {filteredStocks.map(stock => (
                 <StockUniverseTile
@@ -143,7 +143,7 @@ const DotComSidePanel = ({
         </TabsContent>
 
         {/* Portfolio Tab */}
-        <TabsContent value="portfolio" className="flex-1 min-h-0 px-4 pb-4">
+        <TabsContent value="portfolio" className="flex-1 min-h-0 px-4 pb-4 overflow-hidden">
           <ScrollArea className="h-full">
             <div className="pr-3">
               {/* Sector exposure bar */}
