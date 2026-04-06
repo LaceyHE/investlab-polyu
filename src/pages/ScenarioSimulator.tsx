@@ -217,8 +217,8 @@ const ScenarioSimulator = () => {
                       />
                     </div>
 
-                    {/* Sidebar — capped to left column height, scrolls internally */}
-                    <div className="lg:overflow-y-auto lg:max-h-full">
+                    {/* Sidebar — sticky with viewport-capped height, scrolls internally */}
+                    <div className="lg:sticky lg:top-20 lg:self-start lg:h-[calc(100vh-6rem)] lg:overflow-hidden">
                       {isDotCom ? (
                         <DotComSidePanel
                           positions={simulation.state.positions}

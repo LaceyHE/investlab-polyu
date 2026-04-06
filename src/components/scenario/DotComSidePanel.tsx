@@ -62,7 +62,7 @@ const DotComSidePanel = ({
   }, [filterIndustry]);
 
   return (
-    <div className="rounded-xl border border-border bg-card flex flex-col h-full">
+    <div className="rounded-xl border border-border bg-card flex flex-col h-full min-h-0 overflow-hidden">
       {/* Always-visible allocation bar */}
       <div className="p-4 border-b border-border flex-shrink-0">
         <div className="flex h-3 rounded-full overflow-hidden bg-secondary">
