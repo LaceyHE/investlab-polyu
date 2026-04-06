@@ -7,7 +7,7 @@ import { Slider } from "@/components/ui/slider";
 import StrategySelector, { strategies, type StrategyDef } from "@/components/sandbox/StrategySelector";
 import StrategyChart from "@/components/sandbox/StrategyChart";
 import MetricsPanel from "@/components/sandbox/MetricsPanel";
-import StrategyAIExplanation from "@/components/sandbox/StrategyAIExplanation";
+import PortfolioEvaluation from "@/components/sandbox/PortfolioEvaluation";
 import { useMarketPrices, useStrategyBacktest, type StrategyType } from "@/hooks/useStrategyBacktest";
 
 // ── Slider config per strategy ──────────────────────────────────────────────
