@@ -60,43 +60,80 @@ interface Props {
 }
 
 const StrategySelector = ({ selected, onSelect }: Props) => {
+  const presetStrategies = strategies.filter(s => s.id !== 'custom');
+  const customStrategy = strategies.find(s => s.id === 'custom');
+
   return (
-    <div className="grid gap-3 sm:grid-cols-2">
-      {strategies.map((s, i) => {
-        const isActive = selected === s.id;
+    <div className="space-y-4">
+      <div className="grid gap-3 sm:grid-cols-2">
+        {presetStrategies.map((s, i) => {
+          const isActive = selected === s.id;
+          return (
+            <motion.button
+              key={s.id}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.08 }}
+              onClick={() => onSelect(s.id)}
+              className={`group relative rounded-xl border p-5 text-left transition-all ${
+                isActive
+                  ? 'border-foreground bg-secondary shadow-sm'
+                  : 'border-border bg-card hover:border-muted-foreground/40'
+              }`}
+            >
+              <div className="flex items-start justify-between">
+                <div>
+                  <span className="text-xl mr-2">{s.icon}</span>
+                  <h3 className="inline font-serif text-lg text-foreground">{s.name}</h3>
+                  <p className="text-xs text-muted-foreground mt-1">{s.subtitle}</p>
+                </div>
+                <ChevronRight
+                  className={`h-4 w-4 transition-opacity ${
+                    isActive ? 'text-foreground opacity-100' : 'text-muted-foreground opacity-0 group-hover:opacity-100'
+                  }`}
+                />
+              </div>
+              <div
+                className="absolute bottom-0 left-4 right-4 h-0.5 rounded-full transition-opacity"
+                style={{ backgroundColor: s.color, opacity: isActive ? 1 : 0.3 }}
+              />
+            </motion.button>
+          );
+        })}
+      </div>
+
+      {/* Build Your Own — full-width, visually distinct */}
+      {customStrategy && (() => {
+        const isActive = selected === customStrategy.id;
         return (
           <motion.button
-            key={s.id}
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.08 }}
-            onClick={() => onSelect(s.id)}
-            className={`group relative rounded-xl border p-5 text-left transition-all ${
+            transition={{ delay: presetStrategies.length * 0.08 }}
+            onClick={() => onSelect(customStrategy.id)}
+            className={`group relative w-full rounded-xl border p-6 text-left transition-all ${
               isActive
                 ? 'border-foreground bg-secondary shadow-sm'
-                : 'border-border bg-card hover:border-muted-foreground/40'
+                : 'border-dashed border-primary/40 bg-primary/5 hover:border-primary/60 hover:bg-primary/10'
             }`}
           >
-            <div className="flex items-start justify-between">
-              <div>
-                <span className="text-xl mr-2">{s.icon}</span>
-                <h3 className="inline font-serif text-lg text-foreground">{s.name}</h3>
-                <p className="text-xs text-muted-foreground mt-1">{s.subtitle}</p>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">{customStrategy.icon}</span>
+                <div>
+                  <h3 className="font-serif text-xl text-foreground">{customStrategy.name}</h3>
+                  <p className="text-sm text-muted-foreground mt-0.5">{customStrategy.subtitle} — pick your own assets &amp; weights</p>
+                </div>
               </div>
               <ChevronRight
-                className={`h-4 w-4 transition-opacity ${
-                  isActive ? 'text-foreground opacity-100' : 'text-muted-foreground opacity-0 group-hover:opacity-100'
+                className={`h-5 w-5 transition-opacity ${
+                  isActive ? 'text-foreground opacity-100' : 'text-primary opacity-60 group-hover:opacity-100'
                 }`}
               />
             </div>
-            {/* Color accent bar */}
-            <div
-              className="absolute bottom-0 left-4 right-4 h-0.5 rounded-full transition-opacity"
-              style={{ backgroundColor: s.color, opacity: isActive ? 1 : 0.3 }}
-            />
           </motion.button>
         );
-      })}
+      })()}
     </div>
   );
 };
