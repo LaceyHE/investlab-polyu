@@ -34,7 +34,7 @@ export const scenarioPresets: ScenarioPreset[] = [
     endDate: '2002-12-31',
     peakDrawdown: '–78%',
     indexTicker: '^IXIC',
-    tickers: ['MSFT', 'INTC', 'CSCO', 'AMZN', 'ORCL', 'QCOM', 'IBM', 'DELL', 'HPQ', 'TXN', 'KO', 'PG', 'XOM', 'WMT', 'JNJ'],
+    tickers: ['CSCO', 'INTC', 'ORCL', 'QCOM', 'DELL', 'MSFT', 'AMZN', 'IBM', 'HPQ', 'TXN', 'KO', 'PG', 'XOM', 'WMT', 'JNJ'],
     events: [
       { date: '1999-01-05', label: 'Tech Rally Accelerates', description: 'Nasdaq begins its most aggressive rally, driven by internet IPO mania.', type: 'earnings' },
       { date: '1999-11-01', label: 'Y2K Spending Surge', description: 'Companies accelerate tech spending ahead of Y2K, boosting revenues artificially.', type: 'policy' },
