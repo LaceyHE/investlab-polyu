@@ -1,11 +1,11 @@
 import { Link, useLocation } from "react-router-dom";
-import { BookOpen, Route, FlaskConical, History, User } from "lucide-react";
+import { BookOpen, Route, FlaskConical, Compass, User } from "lucide-react";
 
 const navItems = [
   { to: "/", icon: BookOpen, label: "Home" },
   { to: "/learning-path", icon: Route, label: "Learning Path" },
   { to: "/sandbox", icon: FlaskConical, label: "Sandbox" },
-  { to: "/stress-tests", icon: History, label: "Stress Tests" },
+  { to: "/scenarios", icon: Compass, label: "Scenarios" },
 ];
 
 const AppNav = () => {
