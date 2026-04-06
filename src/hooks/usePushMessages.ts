@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { dotcomStocks, type RiskCategory } from "@/data/dotcom-stocks";
+import type { ScenarioStock } from "@/data/scenario-stocks";
 import type { Position, PortfolioMetrics } from "@/hooks/useScenarioSimulation";
 import type { ScenarioEvent } from "@/data/scenario-presets";
 
@@ -18,11 +18,12 @@ interface UsePushMessagesParams {
   metrics: PortfolioMetrics;
   currentEvent: ScenarioEvent | null;
   enabled: boolean;
+  stocks: ScenarioStock[];
 }
 
 const DEFAULT_TTL = 6000;
 
-export function usePushMessages({ positions, metrics, currentEvent, enabled }: UsePushMessagesParams) {
+export function usePushMessages({ positions, metrics, currentEvent, enabled, stocks }: UsePushMessagesParams) {
   const [messages, setMessages] = useState<PushMessage[]>([]);
   const lastMessageTime = useRef(0);
   const lastEventId = useRef<string | null>(null);
@@ -43,7 +44,7 @@ export function usePushMessages({ positions, metrics, currentEvent, enabled }: U
     let totalWeight = 0;
 
     positions.forEach(pos => {
-      const stock = dotcomStocks.find(s => s.ticker === pos.ticker);
+      const stock = stocks.find(s => s.ticker === pos.ticker);
       if (stock) {
         sectorWeights[stock.industry] = (sectorWeights[stock.industry] || 0) + pos.weight;
         if (stock.riskCategory === 'failed') failedWeight += pos.weight;
@@ -53,7 +54,7 @@ export function usePushMessages({ positions, metrics, currentEvent, enabled }: U
 
     const maxSector = Object.entries(sectorWeights).sort((a, b) => b[1] - a[1])[0];
     const maxSectorPct = maxSector ? (maxSector[1] / Math.max(totalWeight, 1)) * 100 : 0;
-    const hasResilient = positions.some(p => dotcomStocks.find(s => s.ticker === p.ticker)?.riskCategory === 'resilient');
+    const hasResilient = positions.some(p => stocks.find(s => s.ticker === p.ticker)?.riskCategory === 'resilient');
 
     return { sectorWeights, failedWeight, totalWeight, maxSector, maxSectorPct, hasResilient };
   }, [positions]);

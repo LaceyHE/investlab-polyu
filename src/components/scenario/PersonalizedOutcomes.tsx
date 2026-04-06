@@ -4,13 +4,14 @@ import { Award, Sparkles, Loader2, Shield, Target, AlertTriangle, PieChart, Chec
 import { supabase } from "@/integrations/supabase/client";
 import type { PortfolioMetrics, Position } from "@/hooks/useScenarioSimulation";
 import type { ScenarioPreset } from "@/data/scenario-presets";
-import { dotcomStocks } from "@/data/dotcom-stocks";
+import type { ScenarioStock } from "@/data/scenario-stocks";
 
 interface PersonalizedOutcomesProps {
   scenario: ScenarioPreset;
   positions: Position[];
   metrics: PortfolioMetrics;
   currentDate: string;
+  stocks: ScenarioStock[];
 }
 
 interface Badge {
@@ -46,7 +47,7 @@ const parseSections = (text: string): { strengths: string[]; areas: string[] } =
   return { strengths, areas };
 };
 
-const PersonalizedOutcomes = ({ scenario, positions, metrics, currentDate }: PersonalizedOutcomesProps) => {
+const PersonalizedOutcomes = ({ scenario, positions, metrics, currentDate, stocks }: PersonalizedOutcomesProps) => {
   const [summary, setSummary] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -55,7 +56,7 @@ const PersonalizedOutcomes = ({ scenario, positions, metrics, currentDate }: Per
   const badges: Badge[] = [];
 
   const uniqueIndustries = new Set(
-    positions.map(p => dotcomStocks.find(s => s.ticker === p.ticker)?.industry).filter(Boolean)
+    positions.map(p => stocks.find(s => s.ticker === p.ticker)?.industry).filter(Boolean)
   );
 
   if (uniqueIndustries.size >= 3) {
