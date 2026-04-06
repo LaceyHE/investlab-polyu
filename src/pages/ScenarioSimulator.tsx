@@ -234,7 +234,6 @@ const ScenarioSimulator = () => {
                           onUpdatePosition={simulation.updatePosition}
                         />
                       )}
-                      <AnalyticsPanel metrics={simulation.metrics} positions={simulation.state.positions} />
                     </div>
                   </div>
 
