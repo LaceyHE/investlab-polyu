@@ -433,7 +433,7 @@ export default function FinSignal() {
   const [isLive, setIsLive] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [avKey, setAvKey] = useState('');
+  const [avKey, setAvKey] = useState(import.meta.env.VITE_ALPHAVANTAGE_KEY || '');
   const [openaiKey, setOpenaiKey] = useState('');
   const [selectedConcept, setSelectedConcept] = useState(null);
   const [view, setView] = useState('news');
@@ -550,44 +550,30 @@ export default function FinSignal() {
             <Badge variant="outline" className={isLive ? 'border-emerald-300 bg-emerald-50 text-emerald-700' : 'border-amber-300 bg-amber-50 text-amber-700'}>
               {isLive ? '● LIVE' : '● DEMO'}
             </Badge>
-            <Button variant="ghost" size="icon" onClick={() => setShowSettings(!showSettings)}>
+            <Button variant="ghost" size="icon" onClick={() => setShowSettings(!showSettings)} className="hidden">
               <Settings className="w-5 h-5 text-muted-foreground" />
             </Button>
           </div>
         </div>
       </header>
 
-      {/* Settings Panel */}
-      <AnimatePresence>
-        {showSettings && (
-          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden border-b border-border bg-card">
-            <div className="max-w-7xl mx-auto px-4 py-4 space-y-3">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs text-muted-foreground mb-1 flex items-center gap-1"><Key className="w-3 h-3" /> Alpha Vantage API Key (for real news)</label>
-                  <Input type="password" value={avKey} onChange={e => setAvKey(e.target.value)} placeholder="Enter key... (free at alphavantage.co)" />
-                </div>
-                <div>
-                  <label className="text-xs text-muted-foreground mb-1 flex items-center gap-1"><Brain className="w-3 h-3" /> OpenAI API Key (for AI analysis)</label>
-                  <Input type="password" value={openaiKey} onChange={e => setOpenaiKey(e.target.value)} placeholder="sk-... (optional, enables AI analysis)" />
-                </div>
-              </div>
-              <div className="flex gap-2 items-center">
-                <Input value={searchTopic} onChange={e => setSearchTopic(e.target.value)} placeholder="Filter by topic (e.g. technology, finance, earnings)" className="flex-1" />
-                <Button onClick={fetchNews} disabled={loading}>
-                  <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-                  {loading ? 'Fetching...' : 'Fetch News'}
-                </Button>
-              </div>
-              {error && (
-                <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-                  <AlertTriangle className="w-4 h-4 flex-shrink-0" /> {error}
-                </div>
-              )}
+      {/* Search & Fetch Bar */}
+      <div className="border-b border-border bg-card">
+        <div className="max-w-7xl mx-auto px-4 py-3">
+          <div className="flex gap-2 items-center">
+            <Input value={searchTopic} onChange={e => setSearchTopic(e.target.value)} placeholder="Filter by topic (e.g. technology, finance, earnings)" className="flex-1" />
+            <Button onClick={fetchNews} disabled={loading}>
+              <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+              {loading ? 'Fetching...' : 'Fetch News'}
+            </Button>
+          </div>
+          {error && (
+            <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mt-2">
+              <AlertTriangle className="w-4 h-4 flex-shrink-0" /> {error}
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          )}
+        </div>
+      </div>
 
       {/* Tabs + Main Content */}
       <div className="max-w-7xl mx-auto px-4 pt-4 pb-6">
@@ -615,7 +601,7 @@ export default function FinSignal() {
                 <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5 text-amber-500" />
                 <div>
                   <p className="font-medium">Demo Mode — Showing sample data</p>
-                  <p className="text-amber-600 mt-1">Click the ⚙ Settings button above, enter your Alpha Vantage API key, and click "Fetch News" to load real-time news. <strong className="text-amber-800">Highlighted words</strong> in articles are financial concepts — click them to learn what they mean!</p>
+                  <p className="text-amber-600 mt-1">Click "Fetch News" to load real-time news. <strong className="text-amber-800">Highlighted words</strong> in articles are financial concepts — click them to learn what they mean!</p>
                 </div>
               </div>
             )}
