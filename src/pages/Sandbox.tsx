@@ -76,6 +76,7 @@ const Sandbox = () => {
     trend: 0.5,
     income: 0.5,
     momentum: 0.5,
+    custom: 0,
   });
 
   const { data: marketData, isLoading } = useMarketPrices();
