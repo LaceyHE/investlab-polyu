@@ -7,9 +7,9 @@ interface AppLayoutProps {
 
 const AppLayout = ({ children }: AppLayoutProps) => {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex h-screen flex-col overflow-hidden bg-background">
       <AppNav />
-      <main className="pt-16">{children}</main>
+      <main className="flex-1 min-h-0 pt-16">{children}</main>
     </div>
   );
 };
