@@ -198,6 +198,9 @@ const Sandbox = () => {
                     paramLabel={sliderConfig?.formatValue(currentParam) || ''}
                   />
 
+                  {/* Strategy Education */}
+                  <StrategyEducation strategy={selectedStrategy} />
+
                   {/* Learning Takeaway */}
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
