@@ -99,34 +99,34 @@ const DotComSidePanel = ({
           </TabsTrigger>
         </TabsList>
 
-        {/* Stock Universe Tab */}
-        <TabsContent value="universe" className="flex-1 min-h-0 px-4 pb-4 flex flex-col overflow-hidden">
-          {/* Sticky industry filter chips */}
-          <div className="flex items-center gap-1.5 flex-wrap mb-3 mt-1 sticky top-0 bg-card z-10 py-1 flex-shrink-0">
-            <Filter className="h-3 w-3 text-muted-foreground" />
-            <button
-              onClick={() => setFilterIndustry(null)}
-              className={`px-2 py-0.5 text-[10px] rounded-full transition-colors ${
-                !filterIndustry ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              All
-            </button>
-            {industries.map(ind => (
+        <div className="flex-1 min-h-0 relative">
+          {/* Stock Universe Tab */}
+          <TabsContent value="universe" className="absolute inset-0 overflow-y-auto px-4 pb-4">
+            {/* Sticky industry filter chips */}
+            <div className="flex items-center gap-1.5 flex-wrap mb-3 mt-1 sticky top-0 bg-card z-10 py-1">
+              <Filter className="h-3 w-3 text-muted-foreground" />
               <button
-                key={ind}
-                onClick={() => setFilterIndustry(ind === filterIndustry ? null : ind)}
+                onClick={() => setFilterIndustry(null)}
                 className={`px-2 py-0.5 text-[10px] rounded-full transition-colors ${
-                  filterIndustry === ind ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:text-foreground'
+                  !filterIndustry ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:text-foreground'
                 }`}
               >
-                {ind}
+                All
               </button>
-            ))}
-          </div>
+              {industries.map(ind => (
+                <button
+                  key={ind}
+                  onClick={() => setFilterIndustry(ind === filterIndustry ? null : ind)}
+                  className={`px-2 py-0.5 text-[10px] rounded-full transition-colors ${
+                    filterIndustry === ind ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {ind}
+                </button>
+              ))}
+            </div>
 
-          <ScrollArea className="flex-1 min-h-0">
-            <div className="space-y-2 pr-3">
+            <div className="space-y-2">
               {filteredStocks.map(stock => (
                 <StockUniverseTile
                   key={stock.ticker}
@@ -139,8 +139,7 @@ const DotComSidePanel = ({
                 />
               ))}
             </div>
-          </ScrollArea>
-        </TabsContent>
+          </TabsContent>
 
         {/* Portfolio Tab */}
         <TabsContent value="portfolio" className="flex-1 min-h-0 px-4 pb-4 overflow-hidden">
