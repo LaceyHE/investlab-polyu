@@ -96,12 +96,13 @@ export function usePushMessages({ positions, metrics, currentEvent, enabled }: U
     lastEventId.current = eventKey;
 
     const now = Date.now();
-    setMessages(prev => [{
+    const msg: PushMessage = {
       id: `evt-${now}`,
       type: 'info',
       text: `Market this month: ${currentEvent.label}. ${currentEvent.description}`,
       timestamp: now,
-    }, ...prev].slice(0, 5));
+    };
+    setMessages(prev => [msg, ...prev].slice(0, 5));
   }, [currentEvent, enabled]);
 
   const dismissMessage = (id: string) => {
