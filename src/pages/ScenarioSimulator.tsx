@@ -164,7 +164,7 @@ const ScenarioSimulator = () => {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="grid gap-4 lg:grid-cols-[1fr_340px] lg:items-start">
+                  <div className="grid gap-4 lg:grid-cols-[1fr_340px] lg:items-stretch">
                     <div className="space-y-4">
                       {/* Stats */}
                       <div className="grid grid-cols-4 gap-2">
@@ -217,8 +217,8 @@ const ScenarioSimulator = () => {
                       />
                     </div>
 
-                    {/* Sidebar — Stock Selection, stretches to match left */}
-                    <div className="lg:sticky lg:top-4">
+                    {/* Sidebar — fixed to match left column height, scrolls internally */}
+                    <div className="lg:h-full">
                       {isDotCom ? (
                         <DotComSidePanel
                           positions={simulation.state.positions}
