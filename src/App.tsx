@@ -17,6 +17,8 @@ import ScenarioSimulator from "./pages/ScenarioSimulator";
 import Account from "./pages/Account";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import FinSignal from "./pages/FinSignal";
+import FinancialStatements from "./pages/FinancialStatements";
 
 const queryClient = new QueryClient();
 
@@ -41,6 +43,8 @@ const App = () => (
             <Route path="/account" element={<Account />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/stress-tests" element={<Navigate to="/scenarios" replace />} />
+            <Route path="/finsignal" element={<FinSignal />} />
+            <Route path="/financial-statements" element={<FinancialStatements />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

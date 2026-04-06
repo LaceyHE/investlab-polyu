@@ -1,9 +1,16 @@
 import { motion } from "framer-motion";
-import { ArrowRight, Route, FlaskConical, Compass, User } from "lucide-react";
+import { ArrowRight, Route, FlaskConical, Compass, User, TrendingUp } from "lucide-react";
 import { Link } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 
 const hubCards = [
+  {
+    to: "/finsignal",
+    icon: <TrendingUp className="h-6 w-6" />,
+    title: "Market Literacy",
+    desc: "AI-powered financial news intelligence—real-time sentiment analysis, market signals, and financial statement insights.",
+    cta: "Explore Signals",
+  },
   {
     to: "/learning-path",
     icon: <Route className="h-6 w-6" />,
