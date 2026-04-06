@@ -2,11 +2,12 @@ import { motion } from "framer-motion";
 import { TrendingDown, TrendingUp, BarChart3, Activity, Percent, PieChart } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type { PortfolioMetrics, Position } from "@/hooks/useScenarioSimulation";
-import { dotcomStocks } from "@/data/dotcom-stocks";
+import type { ScenarioStock } from "@/data/scenario-stocks";
 
 interface AnalyticsPanelProps {
   metrics: PortfolioMetrics;
   positions?: Position[];
+  stocks?: ScenarioStock[];
 }
 
 const tooltipTexts: Record<string, string> = {
@@ -19,10 +20,10 @@ const tooltipTexts: Record<string, string> = {
   'Net Exposure': 'Percentage of capital invested in stocks (vs. cash).',
 };
 
-const AnalyticsPanel = ({ metrics, positions = [] }: AnalyticsPanelProps) => {
+const AnalyticsPanel = ({ metrics, positions = [], stocks = [] }: AnalyticsPanelProps) => {
   // Sector concentration
   const sectorWeights = positions.reduce((acc, pos) => {
-    const stock = dotcomStocks.find(s => s.ticker === pos.ticker);
+    const stock = stocks.find(s => s.ticker === pos.ticker);
     if (stock) acc[stock.industry] = (acc[stock.industry] || 0) + pos.weight;
     return acc;
   }, {} as Record<string, number>);

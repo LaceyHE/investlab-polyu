@@ -6,7 +6,7 @@ import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
-import { dotcomStocks, industries, type DotComStock } from "@/data/dotcom-stocks";
+import type { ScenarioStock } from "@/data/scenario-stocks";
 import type { PricePoint } from "@/hooks/useMarketData";
 import type { Position } from "@/hooks/useScenarioSimulation";
 
@@ -16,6 +16,8 @@ interface DotComSidePanelProps {
   marketData: Record<string, PricePoint[]> | undefined;
   currentDate: string;
   onUpdatePosition: (ticker: string, weight: number) => void;
+  stocks: ScenarioStock[];
+  industries: string[];
 }
 
 const DotComSidePanel = ({
@@ -24,6 +26,8 @@ const DotComSidePanel = ({
   marketData,
   currentDate,
   onUpdatePosition,
+  stocks,
+  industries,
 }: DotComSidePanelProps) => {
   const [filterIndustry, setFilterIndustry] = useState<string | null>(null);
   const totalAllocated = positions.reduce((s, p) => s + p.weight, 0);
@@ -48,7 +52,7 @@ const DotComSidePanel = ({
   const sectorExposure = useMemo(() => {
     const map: Record<string, number> = {};
     positions.forEach(pos => {
-      const stock = dotcomStocks.find(s => s.ticker === pos.ticker);
+      const stock = stocks.find(s => s.ticker === pos.ticker);
       if (stock) {
         map[stock.industry] = (map[stock.industry] || 0) + pos.weight;
       }
@@ -57,8 +61,8 @@ const DotComSidePanel = ({
   }, [positions]);
 
   const filteredStocks = useMemo(() => {
-    if (!filterIndustry) return dotcomStocks;
-    return dotcomStocks.filter(s => s.industry === filterIndustry);
+    if (!filterIndustry) return stocks;
+    return stocks.filter(s => s.industry === filterIndustry);
   }, [filterIndustry]);
 
   return (
@@ -169,7 +173,7 @@ const DotComSidePanel = ({
                 {positions.map((pos, i) => {
                   const pnl = getTickerReturn(pos);
                   const maxWeight = Math.min(100, pos.weight + cashWeight);
-                  const stock = dotcomStocks.find(s => s.ticker === pos.ticker);
+      const stock = stocks.find(s => s.ticker === pos.ticker);
 
                   return (
                     <motion.div
@@ -246,7 +250,7 @@ const StockUniverseTile = ({
   canBuy,
   onBuy,
 }: {
-  stock: DotComStock;
+  stock: ScenarioStock;
   marketData: PricePoint[] | undefined;
   currentDate: string;
   positionWeight: number;
