@@ -15,32 +15,36 @@ export function computeRadarScores(
   strategy: StrategyType,
   param: number,
 ): RadarScore[] {
-  // Return: CAGR 0%→0, 10%→5, 20%→10
-  const returnScore = clamp((result.cagr / 20) * 10);
+  // Return: CAGR mapped to 0-10 (–20% → 0, +20% → 10)
+  const returnScore = clamp(((result.cagr + 20) / 40) * 10);
 
-  // Risk: Volatility inverted — 0%→10, 20%→5, 40%→0
-  const riskScore = clamp(10 - (result.volatility / 40) * 10);
+  // Risk: lower vol + lower drawdown = higher score
+  const volScore = clamp(10 - (result.volatility / 4));       // 40% vol → 0
+  const ddScore = clamp(10 + result.maxDrawdown / 4);          // –40% dd → 0
+  const riskScore = clamp((volScore + ddScore) / 2);
 
-  // Stability: Max Drawdown inverted — 0%→10, -20%→5, -40%→0
-  const stabilityScore = clamp(10 + (result.maxDrawdown / 40) * 10);
+  // Stability: inverse of volatility (0–30% range)
+  const stabilityScore = clamp(10 - (result.volatility / 3));
 
-  // Diversification: strategy & param based (unchanged logic)
+  // Diversification: depends on strategy & param
   let divScore: number;
   if (strategy === 'allocation') {
-    const balance = 1 - Math.abs(param - 0.5) * 2;
+    // Balanced allocation scores higher
+    const balance = 1 - Math.abs(param - 0.5) * 2; // 0.5 → 1, 0 or 1 → 0
     divScore = clamp(balance * 10);
   } else if (strategy === 'income') {
     const balance = 1 - Math.abs(param - 0.5) * 2;
     divScore = clamp(balance * 8 + 2);
   } else {
+    // Trend / momentum: single asset, lower diversification
     divScore = clamp(3);
   }
 
-  // Consistency: Worst Quarter inverted — 0%→10, -15%→5, -30%→0
-  const consistencyScore = clamp(10 + (result.worstQuarter / 30) * 10);
+  // Consistency: smoothness of returns (low worst quarter deviation)
+  const consistencyScore = clamp(10 + result.worstQuarter / 3); // –30% worst → 0
 
-  // Efficiency: Sharpe 0→0, 1→5, 2→10
-  const efficiencyScore = clamp((result.sharpeRatio / 2) * 10);
+  // Efficiency: Sharpe ratio mapped (–1 → 0, 2 → 10)
+  const efficiencyScore = clamp(((result.sharpeRatio + 1) / 3) * 10);
 
   return [
     { dimension: 'Return', score: Math.round(returnScore * 10) / 10, fullMark: 10 },

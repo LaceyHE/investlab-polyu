@@ -63,9 +63,12 @@ function generateFallbackData(ticker: string): DailyPrice[] {
   const start = new Date(START);
   const end = new Date(END);
 
+  // SPY: ~380→~480 in 2021, peaks ~480 mid-2022, ends ~380
+  // AGG: ~115→~110 in 2021, drops to ~95 by end 2022
   const isSPY = ticker === 'SPY';
-  // Realistic 2021-2022: SPY ~380→475→380, AGG ~115→114→97
   let price = isSPY ? 380 : 115;
+  const dailyDrift = isSPY ? 0.0001 : -0.0001;
+  const vol = isSPY ? 0.012 : 0.004;
 
   let seed = ticker.charCodeAt(0) * 137;
   const rand = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
@@ -73,27 +76,11 @@ function generateFallbackData(ticker: string): DailyPrice[] {
   const cur = new Date(start);
   while (cur <= end) {
     if (cur.getDay() !== 0 && cur.getDay() !== 6) {
+      // Add regime: 2022 was a down year
       const year = cur.getFullYear();
-      const month = cur.getMonth();
-      let drift: number;
-      if (isSPY) {
-        // 2021: strong rally (~+27%), 2022: bear market (~-19%)
-        if (year === 2021) {
-          drift = 0.0009; // ~+25% annualized
-        } else {
-          drift = -0.0008; // ~-18% annualized
-        }
-      } else {
-        // AGG: 2021 flat/slight decline, 2022 significant drop (-13%)
-        if (year === 2021) {
-          drift = -0.00005; // ~-1% annualized
-        } else {
-          drift = -0.0006; // ~-13% annualized
-        }
-      }
-      const vol = isSPY ? 0.011 : 0.003;
-      price *= 1 + drift + (rand() - 0.5) * vol * 2;
-      price = Math.max(price, isSPY ? 300 : 85);
+      const regime = year === 2022 ? (isSPY ? -0.0004 : -0.0003) : (isSPY ? 0.0006 : 0.0001);
+      price *= 1 + regime + dailyDrift + (rand() - 0.5) * vol * 2;
+      price = Math.max(price, isSPY ? 300 : 80);
       points.push({ date: cur.toISOString().split('T')[0], close: price });
     }
     cur.setDate(cur.getDate() + 1);
@@ -147,11 +134,15 @@ function computeMetrics(portfolioValues: number[], dates: string[]): Omit<Backte
   const variance = returns.reduce((s, r) => s + (r - avgRet) ** 2, 0) / returns.length;
   const volatility = Math.sqrt(variance * 252) * 100;
 
-  // Sharpe Ratio: (annualized excess return) / (annualized std dev)
+  // Sharpe Ratio
   const excessReturns = returns.map(r => r - RISK_FREE);
   const avgExcess = excessReturns.reduce((a, b) => a + b, 0) / excessReturns.length;
   const excessStd = Math.sqrt(excessReturns.reduce((s, r) => s + (r - avgExcess) ** 2, 0) / excessReturns.length);
-  const sharpe = excessStd > 0 ? (avgExcess * Math.sqrt(252)) / (excessStd * Math.sqrt(252)) : 0;
+  const sharpeRatio = excessStd > 0 ? (avgExcess * Math.sqrt(252)) / (excessStd * Math.sqrt(1)) : 0;
+  // Simplified: sharpe = (annualized excess) / (annualized vol)
+  const annualExcess = avgExcess * 252;
+  const annualStd = excessStd * Math.sqrt(252);
+  const sharpe = annualStd > 0 ? annualExcess / annualStd : 0;
 
   // Max Drawdown
   let peak = portfolioValues[0];
