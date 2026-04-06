@@ -1,76 +1,28 @@
 
-## Fix plan: Right sidebar overflow on Stock-All
 
-### Goal
-Keep the left and right columns visually aligned on desktop, and make the **right sidebar scroll internally** when the stock list is long.
+# Fix: Black/blank space in right sidebar TabsContent
 
-### Root cause
-The right column currently uses `lg:overflow-y-auto lg:max-h-full`, but it does **not have a reliably constrained height**.  
-So when “Stocks → All” becomes tall, the sidebar can still grow beyond the left column instead of becoming a contained scroll area.
+## Root Cause
 
-### Implementation approach
+Radix `TabsContent` renders as `display: block` when active. Even though the parent `Tabs` is `flex flex-col` and TabsContent has `flex-1`, a block-level element doesn't stretch to fill remaining flex space the same way a flex child with `display: flex` does. The `flex-1` only sets `flex-grow`, but since Radix controls the `display` property internally, the content area doesn't actually fill the remaining height.
 
-#### 1. Constrain the right sidebar at the page level
-**File:** `src/pages/ScenarioSimulator.tsx`
+## Fix
 
-- Replace the current sidebar wrapper with a **sticky, viewport-capped container** on large screens.
-- Use a fixed top offset and fixed max/height calculation so the sidebar always has a real scroll boundary.
+**File: `src/components/scenario/DotComSidePanel.tsx`**
 
-Planned direction:
-- Keep the main 2-column grid
-- Change right wrapper to something like:
-  - `lg:sticky`
-  - `lg:top-20`
-  - `lg:self-start`
-  - `lg:h-[calc(100vh-6rem)]` or equivalent
-- Remove outer `overflow-y-auto` from this wrapper if the inner panel already owns scrolling
+Replace the flex-based layout approach with explicit height calculations that don't depend on Radix's display behavior:
 
-This matches your request to use a fixed margin/top offset and keep scrolling on the right side.
+1. The `Tabs` wrapper: keep `flex-1 flex flex-col min-h-0`
+2. Both `TabsContent` elements: add `data-[state=active]:flex data-[state=active]:flex-col` so that when Radix activates the tab, it becomes a flex container that properly fills space
+3. Alternatively (more reliable): wrap the entire tabs area below the TabsList in a `div` with `flex-1 min-h-0 relative`, and position TabsContent with `absolute inset-0` + `overflow-y-auto` so it fills the exact remaining space regardless of Radix's display model
 
-#### 2. Make the side panel itself own the scrolling
-**File:** `src/components/scenario/DotComSidePanel.tsx`
+**Recommended approach**: Use the `absolute` positioning method since it's immune to Radix display quirks:
 
-- Ensure the root card fully fills the constrained parent:
-  - keep `flex flex-col h-full min-h-0`
-  - add `overflow-hidden` so content cannot spill out
-- Ensure both tab panels can shrink correctly:
-  - `Tabs` stays `flex-1 min-h-0`
-  - both `TabsContent` blocks get `min-h-0 overflow-hidden`
-- Let the existing `ScrollArea` be the only scroll container for:
-  - Stock universe list
-  - Portfolio tab content
+- Wrap both `TabsContent` in a relative container: `<div className="flex-1 min-h-0 relative">`
+- Each `TabsContent`: `absolute inset-0 overflow-y-auto px-4 pb-4`
+- Remove the `ScrollArea` wrapper since the TabsContent itself scrolls
+- This guarantees the content area exactly fills available space with no blank gaps
 
-### Expected result
-- On desktop, the right sidebar height stays fixed relative to the viewport
-- When “Stock-All” is selected, the **stock list scrolls inside the sidebar**
-- The left content can remain taller, but the right panel no longer visually overflows or creates awkward blank/stretch behavior
+## Files to modify
+- `src/components/scenario/DotComSidePanel.tsx` — wrap TabsContent in a relative container, use absolute positioning for tab panels
 
-## Technical details
-```text
-Current issue:
-ScenarioSimulator wrapper: overflow-y-auto + max-h-full
-but no explicit height source
-=> child can still expand
-
-Fix:
-ScenarioSimulator
-  right wrapper = sticky + explicit desktop height
-
-DotComSidePanel
-  root = h-full min-h-0 overflow-hidden
-  tab content = min-h-0 overflow-hidden
-  ScrollArea = actual scrolling region
-```
-
-### Files to update
-- `src/pages/ScenarioSimulator.tsx`
-- `src/components/scenario/DotComSidePanel.tsx`
-
-### Acceptance checks
-- Open Dot-Com scenario on desktop
-- Switch to `Stocks`
-- Select `All`
-- Confirm the right sidebar does not exceed its visual container
-- Confirm the stock list scrolls internally
-- Confirm the left column layout remains unchanged
-- Confirm mobile/tablet stacking still works normally
