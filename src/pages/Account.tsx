@@ -1,64 +1,84 @@
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Award, BookOpen, MessageSquare, CheckCircle2, Circle } from "lucide-react";
+import { Award, BookOpen, MessageSquare, CheckCircle2, Circle, LogOut } from "lucide-react";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from "recharts";
+import { useAuth } from "@/contexts/AuthContext";
+import { useUserProgress } from "@/hooks/useUserProgress";
 import AppLayout from "@/components/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { useEffect } from "react";
 
-const modules = [
-  { id: 1, title: "The Price Illusion", completed: false },
-  { id: 2, title: "Strategy Foundations", completed: false },
-  { id: 3, title: "Environment Reading", completed: false },
-  { id: 4, title: "Portfolio Construction", completed: false },
-  { id: 5, title: "Behavioral Traps", completed: false },
-  { id: 6, title: "Full Integration", completed: false },
+const moduleList = [
+  { id: 1, title: "The Price Illusion" },
+  { id: 2, title: "Strategy Foundations" },
+  { id: 3, title: "Environment Reading" },
+  { id: 4, title: "Portfolio Construction" },
+  { id: 5, title: "Behavioral Traps" },
+  { id: 6, title: "Full Integration" },
 ];
-
-const badges = [
-  { label: "First Module", description: "Complete your first module", earned: false },
-  { label: "Scenario Runner", description: "Run your first scenario simulation", earned: false },
-  { label: "Sandbox Explorer", description: "Back-test a strategy in the Sandbox", earned: false },
-  { label: "Strategy Thinker", description: "Complete 3 modules", earned: false },
-  { label: "Risk Aware", description: "Survive a stress-test scenario", earned: false },
-  { label: "Full Graduate", description: "Complete all 6 modules", earned: false },
-];
-
-const abilityData = [
-  { dimension: "Strategy", score: 0 },
-  { dimension: "Risk", score: 0 },
-  { dimension: "Environment", score: 0 },
-  { dimension: "Reflection", score: 0 },
-  { dimension: "Allocation", score: 0 },
-];
-
-const comments = [
-  { text: "Complete modules and run scenarios to receive AI commentary on your decisions.", date: "—" },
-];
-
-const completedCount = modules.filter((m) => m.completed).length;
-const progressPct = Math.round((completedCount / modules.length) * 100);
 
 const Account = () => {
+  const navigate = useNavigate();
+  const { user, loading: authLoading, signOut } = useAuth();
+  const { completedModules, hasActivity, loading: progressLoading } = useUserProgress();
+
+  useEffect(() => {
+    if (!authLoading && !user) navigate("/auth", { replace: true });
+  }, [authLoading, user, navigate]);
+
+  if (authLoading || !user) return null;
+
+  const displayName = (user.user_metadata?.display_name as string) || user.email || "Investor";
+  const initials = displayName.slice(0, 2).toUpperCase();
+
+  const modules = moduleList.map((m) => ({
+    ...m,
+    completed: completedModules.includes(m.id),
+  }));
+
+  const completedCount = modules.filter((m) => m.completed).length;
+  const progressPct = Math.round((completedCount / modules.length) * 100);
+
+  const badges = [
+    { label: "First Module", description: "Complete your first module", earned: completedCount >= 1 },
+    { label: "Scenario Runner", description: "Run your first scenario simulation", earned: hasActivity("scenario_run") },
+    { label: "Sandbox Explorer", description: "Back-test a strategy in the Sandbox", earned: hasActivity("sandbox_backtest") },
+    { label: "Strategy Thinker", description: "Complete 3 modules", earned: completedCount >= 3 },
+    { label: "Risk Aware", description: "Survive a stress-test scenario", earned: hasActivity("scenario_run") },
+    { label: "Full Graduate", description: "Complete all 6 modules", earned: completedCount === 6 },
+  ];
+
+  const abilityData = [
+    { dimension: "Strategy", score: Math.min(10, completedCount * 1.5) },
+    { dimension: "Risk", score: hasActivity("scenario_run") ? 5 : 0 },
+    { dimension: "Environment", score: completedModules.includes(3) ? 6 : 0 },
+    { dimension: "Reflection", score: hasActivity("sandbox_backtest") ? 5 : 0 },
+    { dimension: "Allocation", score: completedModules.includes(4) ? 6 : 0 },
+  ];
+
+  const comments = [
+    { text: "Complete modules and run scenarios to receive AI commentary on your decisions.", date: "—" },
+  ];
+
   return (
     <AppLayout>
       <div className="container py-10 md:py-16 space-y-8 max-w-5xl">
-        {/* Profile Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-4"
-        >
-          <Avatar className="h-16 w-16">
-            <AvatarFallback className="text-lg font-serif bg-primary/10 text-primary">
-              IL
-            </AvatarFallback>
-          </Avatar>
-          <div>
-            <h1 className="font-serif text-2xl md:text-3xl text-foreground">Investor Profile</h1>
-            <p className="text-sm text-muted-foreground">Track your learning journey and growth</p>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Avatar className="h-16 w-16">
+              <AvatarFallback className="text-lg font-serif bg-primary/10 text-primary">{initials}</AvatarFallback>
+            </Avatar>
+            <div>
+              <h1 className="font-serif text-2xl md:text-3xl text-foreground">{displayName}</h1>
+              <p className="text-sm text-muted-foreground">{user.email}</p>
+            </div>
           </div>
+          <Button variant="outline" size="sm" onClick={() => signOut()} className="gap-2">
+            <LogOut className="h-4 w-4" /> Sign Out
+          </Button>
         </motion.div>
 
         <div className="grid gap-6 md:grid-cols-2">
@@ -67,8 +87,7 @@ const Account = () => {
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2">
-                  <BookOpen className="h-4 w-4 text-primary" />
-                  Learning Progress
+                  <BookOpen className="h-4 w-4 text-primary" /> Learning Progress
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -80,14 +99,8 @@ const Account = () => {
                 <ul className="space-y-2 pt-1">
                   {modules.map((m) => (
                     <li key={m.id} className="flex items-center gap-2 text-sm">
-                      {m.completed ? (
-                        <CheckCircle2 className="h-4 w-4 text-primary" />
-                      ) : (
-                        <Circle className="h-4 w-4 text-muted-foreground/40" />
-                      )}
-                      <span className={m.completed ? "text-foreground" : "text-muted-foreground"}>
-                        Module {m.id}: {m.title}
-                      </span>
+                      {m.completed ? <CheckCircle2 className="h-4 w-4 text-primary" /> : <Circle className="h-4 w-4 text-muted-foreground/40" />}
+                      <span className={m.completed ? "text-foreground" : "text-muted-foreground"}>Module {m.id}: {m.title}</span>
                     </li>
                   ))}
                 </ul>
@@ -105,24 +118,12 @@ const Account = () => {
                 <ResponsiveContainer width="100%" height={240}>
                   <RadarChart cx="50%" cy="50%" outerRadius="70%" data={abilityData}>
                     <PolarGrid stroke="hsl(var(--border))" />
-                    <PolarAngleAxis
-                      dataKey="dimension"
-                      tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
-                    />
+                    <PolarAngleAxis dataKey="dimension" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
                     <PolarRadiusAxis angle={30} domain={[0, 10]} tick={false} axisLine={false} />
-                    <Radar
-                      name="Ability"
-                      dataKey="score"
-                      stroke="hsl(var(--primary))"
-                      fill="hsl(var(--primary))"
-                      fillOpacity={0.15}
-                      strokeWidth={2}
-                    />
+                    <Radar name="Ability" dataKey="score" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.15} strokeWidth={2} />
                   </RadarChart>
                 </ResponsiveContainer>
-                <p className="text-xs text-muted-foreground text-center mt-2">
-                  Complete modules and scenarios to build your profile
-                </p>
+                <p className="text-xs text-muted-foreground text-center mt-2">Complete modules and scenarios to build your profile</p>
               </CardContent>
             </Card>
           </motion.div>
@@ -132,21 +133,13 @@ const Account = () => {
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2">
-                  <Award className="h-4 w-4 text-primary" />
-                  Badges Earned
+                  <Award className="h-4 w-4 text-primary" /> Badges Earned
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-3">
                   {badges.map((b) => (
-                    <div
-                      key={b.label}
-                      className={`rounded-lg border p-3 text-center transition-colors ${
-                        b.earned
-                          ? "border-primary/30 bg-primary/5"
-                          : "border-border bg-secondary/30 opacity-50"
-                      }`}
-                    >
+                    <div key={b.label} className={`rounded-lg border p-3 text-center transition-colors ${b.earned ? "border-primary/30 bg-primary/5" : "border-border bg-secondary/30 opacity-50"}`}>
                       <Award className={`h-5 w-5 mx-auto mb-1 ${b.earned ? "text-primary" : "text-muted-foreground"}`} />
                       <p className="text-xs font-medium text-foreground">{b.label}</p>
                       <p className="text-[10px] text-muted-foreground mt-0.5">{b.description}</p>
@@ -162,8 +155,7 @@ const Account = () => {
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2">
-                  <MessageSquare className="h-4 w-4 text-primary" />
-                  AI Commentary
+                  <MessageSquare className="h-4 w-4 text-primary" /> AI Commentary
                 </CardTitle>
               </CardHeader>
               <CardContent>
