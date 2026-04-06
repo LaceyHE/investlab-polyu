@@ -164,7 +164,7 @@ const ScenarioSimulator = () => {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="grid gap-4 lg:grid-cols-[1fr_340px]">
+                  <div className="grid gap-4 lg:grid-cols-[1fr_340px] lg:items-start">
                     <div className="space-y-4">
                       {/* Stats */}
                       <div className="grid grid-cols-4 gap-2">
@@ -181,6 +181,10 @@ const ScenarioSimulator = () => {
                         ))}
                       </div>
 
+                      {/* Analytics */}
+                      <AnalyticsPanel metrics={simulation.metrics} positions={simulation.state.positions} />
+
+                      {/* Chart */}
                       <MarketChart
                         indexData={indexData}
                         navHistory={simulation.state.navHistory}
@@ -213,8 +217,8 @@ const ScenarioSimulator = () => {
                       />
                     </div>
 
-                    {/* Sidebar */}
-                    <div className="space-y-4">
+                    {/* Sidebar — Stock Selection, stretches to match left */}
+                    <div className="lg:sticky lg:top-4">
                       {isDotCom ? (
                         <DotComSidePanel
                           positions={simulation.state.positions}
@@ -233,7 +237,6 @@ const ScenarioSimulator = () => {
                           onUpdatePosition={simulation.updatePosition}
                         />
                       )}
-                      <AnalyticsPanel metrics={simulation.metrics} positions={simulation.state.positions} />
                     </div>
                   </div>
 
