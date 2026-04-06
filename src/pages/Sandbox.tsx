@@ -8,6 +8,7 @@ import StrategySelector, { strategies, type StrategyDef } from "@/components/san
 import StrategyChart from "@/components/sandbox/StrategyChart";
 import MetricsPanel from "@/components/sandbox/MetricsPanel";
 import PortfolioEvaluation from "@/components/sandbox/PortfolioEvaluation";
+import StrategyEducation from "@/components/sandbox/StrategyEducation";
 import { useMarketPrices, useStrategyBacktest, type StrategyType } from "@/hooks/useStrategyBacktest";
 
 // ── Slider config per strategy ──────────────────────────────────────────────
@@ -196,6 +197,9 @@ const Sandbox = () => {
                     param={currentParam}
                     paramLabel={sliderConfig?.formatValue(currentParam) || ''}
                   />
+
+                  {/* Strategy Education */}
+                  <StrategyEducation strategy={selectedStrategy} />
 
                   {/* Learning Takeaway */}
                   <motion.div
