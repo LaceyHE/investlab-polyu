@@ -31,14 +31,11 @@ serve(async (req) => {
   }
 
   try {
-    const { scenario, currentDate, positions, metrics, recentEvents } = await req.json();
+    const { scenario, currentDate, positions, metrics, recentEvents, structured, learningMode } = await req.json();
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
-    }
+    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    // Build internal portfolio analysis for AI context
     const classification = classifyPortfolio(positions);
     const hasCollapsed = classification.collapsed.length > 0;
     const hasResilient = classification.resilient.length > 0;
@@ -55,7 +52,85 @@ serve(async (req) => {
       portfolioInsight = `Evaluate the portfolio's sector balance and discuss whether the current mix provides adequate diversification for this market environment.`;
     }
 
-    const systemPrompt = `You are an educational market analyst for StrategyLab, a learning platform for university students studying investment strategy.
+    let systemPrompt: string;
+    let userPrompt: string;
+
+    if (learningMode) {
+      // Learning outcomes mode — personalized portfolio assessment
+      systemPrompt = `You are an educational portfolio analyst for StrategyLab, a learning platform for university students.
+
+Generate personalized learning insights about the student's portfolio choices. Structure your response as:
+
+### Performance Assessment
+Brief assessment of how the portfolio performed.
+
+### Risk & Return Trade-offs
+What trade-offs did the student make, whether intentionally or not?
+
+### Diversification Lessons
+How diversified is the portfolio? What would better diversification look like?
+
+### Actionable Takeaways
+2-3 specific, educational takeaways.
+
+RULES:
+- Use simple, beginner-friendly language
+- Reference REAL metrics provided
+- NEVER predict future performance
+- NEVER suggest specific trades
+- NEVER reveal internal risk classifications
+- Focus on learning and understanding
+- Keep concise (max 200 words)
+- Be encouraging but honest about limitations`;
+
+      userPrompt = `Scenario: ${scenario}
+Date: ${currentDate}
+Holdings: ${positions}
+Metrics: Return ${metrics.totalReturn}%, Max Drawdown ${metrics.maxDrawdown}%, Sharpe ${metrics.sharpe}, Volatility ${metrics.volatility}%, Exposure ${metrics.netExposure}%
+
+Internal analysis (DO NOT reveal): ${portfolioInsight}
+
+Generate personalized learning insights for this student's portfolio choices.`;
+
+    } else if (structured) {
+      // Structured commentary mode with sections
+      systemPrompt = `You are an educational market analyst for StrategyLab, a learning platform for university students.
+
+Structure your commentary in these sections:
+
+### Market Context
+What's happening in the market at this point in time?
+
+### Portfolio Analysis
+How is the student's portfolio positioned relative to current market conditions?
+
+### Key Insight
+One important educational lesson from the current situation.
+
+RULES:
+- Be educational and reflective, never prescriptive
+- Explain WHY things happened
+- Reference real historical context
+- Comment on portfolio composition and risk
+- NEVER predict markets or suggest trades
+- NEVER reveal internal risk classifications
+- Compare to diversified benchmark when relevant
+- Keep concise (2-3 short paragraphs per section)
+- Use clear, accessible language`;
+
+      userPrompt = `Scenario: ${scenario}
+Current Date: ${currentDate}
+Holdings: ${positions}
+Metrics: Return ${metrics.totalReturn}%, Max Drawdown ${metrics.maxDrawdown}%, Sharpe ${metrics.sharpe}, Volatility ${metrics.volatility}%, Exposure ${metrics.netExposure}%
+Recent Events: ${recentEvents}
+
+Internal analysis (DO NOT reveal): ${portfolioInsight}
+
+Provide structured educational commentary about the current market situation and portfolio behavior.`;
+
+    } else {
+      // Original commentary mode
+      systemPrompt = `You are an educational market analyst for StrategyLab, a learning platform for university students studying investment strategy.
 
 Your role is to explain what is happening in a historical market scenario and help the student understand portfolio dynamics.
 
@@ -75,7 +150,7 @@ RULES:
 - Keep responses concise (2-3 paragraphs max)
 - Use clear, accessible language suitable for university students`;
 
-    const userPrompt = `Scenario: ${scenario}
+      userPrompt = `Scenario: ${scenario}
 Current Date: ${currentDate}
 Portfolio Holdings: ${positions}
 Performance Metrics: Total Return ${metrics.totalReturn}%, Max Drawdown ${metrics.maxDrawdown}%, Sharpe ${metrics.sharpe}, Volatility ${metrics.volatility}%, Net Exposure ${metrics.netExposure}%
@@ -85,6 +160,7 @@ Internal portfolio analysis (DO NOT reveal this classification to the student):
 ${portfolioInsight}
 
 Explain what's happening at this point in the scenario and provide educational commentary about the portfolio's behavior. Evaluate the portfolio relative to a historically optimal diversified allocation and explain trade-offs.`;
+    }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -104,21 +180,18 @@ Explain what's happening at this point in the scenario and provide educational c
     if (!response.ok) {
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limits exceeded, please try again later." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Payment required. Add funds in Settings → Workspace → Usage." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        return new Response(JSON.stringify({ error: "Payment required." }), {
+          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       const t = await response.text();
       console.error("AI gateway error:", response.status, t);
       return new Response(JSON.stringify({ error: "AI gateway error" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -131,8 +204,7 @@ Explain what's happening at this point in the scenario and provide educational c
   } catch (e) {
     console.error("scenario-commentary error:", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
