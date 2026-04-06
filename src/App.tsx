@@ -13,6 +13,7 @@ import ModuleFive from "./pages/ModuleFive";
 import ModuleSix from "./pages/ModuleSix";
 import Sandbox from "./pages/Sandbox";
 import ScenarioSimulator from "./pages/ScenarioSimulator";
+import Account from "./pages/Account";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +35,7 @@ const App = () => (
           <Route path="/module/6" element={<ModuleSix />} />
           <Route path="/sandbox" element={<Sandbox />} />
           <Route path="/scenarios" element={<ScenarioSimulator />} />
+          <Route path="/account" element={<Account />} />
           <Route path="/stress-tests" element={<Navigate to="/scenarios" replace />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

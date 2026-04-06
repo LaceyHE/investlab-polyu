@@ -6,6 +6,7 @@ const navItems = [
   { to: "/learning-path", icon: Route, label: "Learning Path" },
   { to: "/sandbox", icon: FlaskConical, label: "Sandbox" },
   { to: "/scenarios", icon: Compass, label: "Scenarios" },
+  { to: "/account", icon: User, label: "Account" },
 ];
 
 const AppNav = () => {
@@ -18,7 +19,7 @@ const AppNav = () => {
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-warm">
             <BookOpen className="h-4 w-4 text-primary-foreground" />
           </div>
-          <span className="font-serif text-lg text-foreground">StrategyLab</span>
+          <span className="font-serif text-lg text-foreground">InvestLab</span>
         </Link>
 
         <div className="hidden md:flex items-center gap-1">
@@ -41,11 +42,11 @@ const AppNav = () => {
           })}
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary">
+        <Link to="/account" className="flex items-center gap-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary hover:bg-secondary/80 transition-colors">
             <User className="h-4 w-4 text-muted-foreground" />
           </div>
-        </div>
+        </Link>
       </div>
     </nav>
   );
