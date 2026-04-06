@@ -1,74 +1,73 @@
-# Rename to InvestLab + Redesign Homepage as Hub
+
+
+# Align all scenarios to match Dot-Com Bubble experience
 
 ## Overview
-
-Rename the entire app from "StrategyLab" to "InvestLab". Redesign the homepage to be a clear dashboard-style hub with direct navigation cards to Learning Path, Sandbox, Scenarios, and a new Account page.
+Create rich stock data files for GFC, COVID, and Recent Volatility scenarios (matching the `dotcom-stocks.ts` pattern), then generalize the sidebar and supporting components so every scenario gets the full experience: tabbed sidebar with sparklines, industry filters, push messages, auto-triggered AI commentary, and personalized outcomes.
 
 ## Changes
 
-### 1. Global rename: StrategyLab → InvestLab
+### 1. Create stock data files for each scenario
 
-**Files:** `index.html`, `src/components/AppNav.tsx`, `src/pages/Index.tsx`
+Create three new files following the `DotComStock` interface pattern (renamed to a generic `ScenarioStock`):
 
-- Update `<title>` and OG meta tags in `index.html` to "InvestLab"
-- Change logo text in `AppNav.tsx` from "StrategyLab" to "InvestLab"
-- Update footer text in `Index.tsx`
+| File | Scenario | Stocks |
+|------|----------|--------|
+| `src/data/gfc-stocks.ts` | 2008 Financial Crisis | JPM, BAC, C, GS, MS, WFC, AIG, GE, AAPL, MSFT, XOM, PG, JNJ, KO, WMT |
+| `src/data/covid-stocks.ts` | COVID Crash | AAPL, MSFT, AMZN, GOOGL, META, TSLA, NFLX, ZM, MRNA, PFE, XOM, BA, DAL, MAR, DIS |
+| `src/data/ratehike-stocks.ts` | Recent Volatility | AAPL, MSFT, GOOGL, AMZN, NVDA, META, TSLA, XOM, CVX, JPM, UNH, PG, KO, LLY, BRK-B |
 
-### 2. Add Account nav item + route
+Each file exports:
+- A typed array of stocks with `ticker`, `name`, `industry`, `riskCategory`, `peakReturn`, `peakPSRatio`, `narrative`
+- An `industries` array
+- Uses the same `ScenarioStock` type (or keeps the `DotComStock` type renamed generically)
 
-**Files:** `src/components/AppNav.tsx`, `src/App.tsx`
+### 2. Create a unified stock registry
 
-- Add `/account` to nav items with User icon and "Account" label
-- Make the existing User avatar in the nav link to `/account`
-- Add route in `App.tsx`
+**File: `src/data/scenario-stocks.ts`** (new)
+- Exports a `ScenarioStock` interface (same shape as `DotComStock`)
+- Exports a `getStocksForScenario(scenarioId: string)` function that returns the correct stock array
+- Exports a `getIndustriesForScenario(scenarioId: string)` function
+- This becomes the single import point for all components
 
-### 3. Create Account page
+### 3. Generalize DotComSidePanel → ScenarioSidePanel
 
-**File:** `src/pages/Account.tsx` (new)
+**File: `src/components/scenario/DotComSidePanel.tsx`** (rename/refactor)
+- Accept a `stocks` prop (array of `ScenarioStock`) instead of importing `dotcomStocks` directly
+- Accept an `industries` prop
+- Remove hardcoded `dotcomStocks` import
+- Everything else stays the same (sparklines, filters, tabs, tooltips)
 
-- Profile header with avatar placeholder and name
-- **Progress section**: shows module completion status (6 modules as a progress bar / checklist)
-- **Badges earned**: visual badge cards (e.g., "Completed Module 1", "First Scenario Run", "Sandbox Explorer") — static/placeholder data for now
-- **Comments earned**: list of AI commentary highlights the user has received
-- **Investment Ability Analysis**: radar chart or summary card showing strengths across dimensions (strategy thinking, risk awareness, environment reading, reflection quality) — reuse the radar chart pattern from the Sandbox
+### 4. Update ScenarioSimulator.tsx
 
-### 4. Redesign Homepage as a Hub
+- Remove the `isDotCom` branching — all scenarios use the rich side panel
+- Import `getStocksForScenario` to get the correct stock array
+- Pass stocks to the generalized side panel
+- Enable push messages for all scenarios (`enabled: !!selectedScenario`)
+- Enable AI commentary `autoTrigger` for all scenarios
+- Show `PersonalizedOutcomes` for all scenarios when at end with positions
 
-**File:** `src/pages/Index.tsx`
+### 5. Update dependent components
 
-- Keep the hero section but make it shorter and punchier
-- Replace the pillars + blockquote + CTA sections with **four large navigation cards** in a 2x2 grid:
-  1. **Learning Path** — icon, brief description ("Master 6 modules of strategy thinking"), progress indicator, link
-  2. **Sandbox** — icon, brief description ("Test strategies with real historical data"), link
-  3. **Scenarios** — icon, brief description ("Simulate market crises and stress-test portfolios"), link
-  4. **Investor Hub** — icon, brief description ("Track progress, badges, and investment analysis"), link
-- Each card is a clickable `Link` with hover animation
-- Keep footer, updated to "InvestLab"
+- **AnalyticsPanel.tsx**: Accept stocks as prop instead of importing `dotcomStocks`
+- **PersonalizedOutcomes.tsx**: Accept stocks as prop instead of importing `dotcomStocks`
+- **usePushMessages.ts**: Accept stocks as parameter instead of importing `dotcomStocks`
 
-## Technical details
+### 6. Remove PortfolioBuilder.tsx usage
 
-### Files to create
+The basic `PortfolioBuilder` component is no longer needed since all scenarios use the rich side panel. It can be kept in the codebase but won't be rendered.
 
+## Files summary
 
-| File                    | Purpose                  |
-| ----------------------- | ------------------------ |
-| `src/pages/Account.tsx` | New account/profile page |
+| Action | File |
+|--------|------|
+| Create | `src/data/gfc-stocks.ts` |
+| Create | `src/data/covid-stocks.ts` |
+| Create | `src/data/ratehike-stocks.ts` |
+| Create | `src/data/scenario-stocks.ts` |
+| Modify | `src/components/scenario/DotComSidePanel.tsx` — generalize to accept stocks prop |
+| Modify | `src/pages/ScenarioSimulator.tsx` — remove isDotCom branching |
+| Modify | `src/components/scenario/AnalyticsPanel.tsx` — accept stocks prop |
+| Modify | `src/components/scenario/PersonalizedOutcomes.tsx` — accept stocks prop |
+| Modify | `src/hooks/usePushMessages.ts` — accept stocks parameter |
 
-
-### Files to modify
-
-
-| File                        | Change                                         |
-| --------------------------- | ---------------------------------------------- |
-| `index.html`                | Title + meta tags → "InvestLab"                |
-| `src/components/AppNav.tsx` | Rename logo, add Account nav item, link avatar |
-| `src/pages/Index.tsx`       | Redesign as hub with 4 navigation cards        |
-| `src/App.tsx`               | Add `/account` route                           |
-
-
-### Design approach
-
-- Reuse existing card styles (`rounded-xl border border-border bg-gradient-card`)
-- Reuse existing motion animations from current homepage
-- Account page reuses `PortfolioRadarChart` component pattern for the ability analysis
-- All data is static/placeholder for now (no database needed yet)
