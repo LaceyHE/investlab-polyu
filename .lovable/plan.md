@@ -1,108 +1,83 @@
 
 
-# Add Email Authentication with Progress Persistence
+# Add "Portfolio Builder" Module to Sandbox
 
 ## Overview
-Add email/password login and signup so users can save their study progress, badges, and AI commentary across sessions. The Hub page becomes personalized per user.
+Add a fifth option card "Build Your Own Portfolio" to the Sandbox strategy selector. Users pick up to 5 assets from a curated list (~15 tickers across stocks, ETFs, bonds, gold), assign weights via sliders (must total 100%), then see a backtest with chart, metrics, radar chart, and AI evaluation — all reusing existing components and patterns.
 
-## Database Changes
+## Architecture
 
-### 1. Create `profiles` table
-Stores display name and auto-creates on signup via trigger.
-
-```sql
-CREATE TABLE public.profiles (
-  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  display_name TEXT DEFAULT '',
-  created_at TIMESTAMPTZ DEFAULT now()
-);
-ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users read own profile" ON public.profiles FOR SELECT TO authenticated USING (auth.uid() = id);
-CREATE POLICY "Users update own profile" ON public.profiles FOR UPDATE TO authenticated USING (auth.uid() = id);
-
-CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
-BEGIN
-  INSERT INTO public.profiles (id, display_name)
-  VALUES (NEW.id, COALESCE(NEW.raw_user_meta_data->>'display_name', ''));
-  RETURN NEW;
-END;
-$$;
-
-CREATE TRIGGER on_auth_user_created
-  AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+```text
+Sandbox.tsx
+├── StrategySelector (existing 4 + new "custom" card)
+├── [if custom selected]
+│   ├── CustomPortfolioBuilder (NEW) — asset picker + weight sliders
+│   ├── useCustomBacktest (NEW hook) — fetch multi-ticker data, compute portfolio
+│   ├── MetricsPanel (REUSED)
+│   ├── StrategyChart (REUSED)
+│   ├── CustomRadarChart (NEW) — diversification-aware scoring
+│   ├── PortfolioEvaluation variant (REUSED edge function)
+│   └── Transparency note
 ```
 
-### 2. Create `user_progress` table
-Tracks module completions, scenario runs, sandbox usage.
+## Files to Create
 
-```sql
-CREATE TABLE public.user_progress (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-  activity_type TEXT NOT NULL, -- 'module_complete', 'scenario_run', 'sandbox_backtest'
-  activity_id TEXT NOT NULL,   -- e.g. 'module-1', 'dotcom', 'allocation'
-  metadata JSONB DEFAULT '{}',
-  created_at TIMESTAMPTZ DEFAULT now(),
-  UNIQUE(user_id, activity_type, activity_id)
-);
-ALTER TABLE public.user_progress ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users read own progress" ON public.user_progress FOR SELECT TO authenticated USING (auth.uid() = user_id);
-CREATE POLICY "Users insert own progress" ON public.user_progress FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
-```
+### 1. `src/data/portfolio-assets.ts`
+Curated asset universe with metadata:
+- ~15 assets grouped by category: Technology (AAPL, MSFT), Finance (JPM), Healthcare (JNJ), Consumer (PG, KO), Energy (XOM), Industrials (CAT), ETFs (SPY, QQQ), Bonds (AGG), Alternatives (GLD)
+- Each entry: `{ ticker, name, category, sector }`
 
-## Frontend Changes
+### 2. `src/hooks/useCustomBacktest.ts`
+- Reuses `useMarketData` from existing hook to fetch price data for selected tickers + SPY benchmark
+- Aligns all tickers by date, computes weighted daily portfolio returns
+- Monthly rebalancing, starts at $10,000
+- Computes same metrics as existing strategies (CAGR, volatility, max drawdown, Sharpe, worst quarter)
+- Returns `BacktestResult` (same type as existing strategies)
 
-### 3. Create Auth context (`src/contexts/AuthContext.tsx`)
-- Wrap app with auth provider using `supabase.auth.onAuthStateChange`
-- Expose `user`, `session`, `signIn`, `signUp`, `signOut`, `loading`
+### 3. `src/components/sandbox/CustomPortfolioBuilder.tsx`
+Main UI component with:
+- **Asset picker**: Grouped by category, click to add (max 5), click X to remove
+- **Weight sliders**: One per selected asset, auto-normalize to 100%
+- **Allocation bar**: Visual horizontal bar showing weight distribution
+- **Run Backtest button**: Triggers data fetch and computation
+- On results: renders MetricsPanel, StrategyChart, radar chart, AI evaluation (reusing existing components)
 
-### 4. Create Auth page (`src/pages/Auth.tsx`)
-- Login and signup tabs with email + password fields
-- Display name field on signup
-- Error handling with toast messages
-- Redirect to `/account` after login
+### 4. `src/components/sandbox/CustomRadarScoring.ts`
+Diversification-aware radar scoring:
+- Return, Risk, Stability, Consistency, Efficiency — same formulas as existing `RadarScoring.ts`
+- **Diversification**: scores based on number of unique sectors + number of asset classes (stocks/ETFs/bonds/gold) — multi-class portfolios score higher
 
-### 5. Create `useUserProgress` hook (`src/hooks/useUserProgress.ts`)
-- Fetch progress from `user_progress` table
-- Provide `markComplete(activityType, activityId)` function
-- Derive completed modules, badges earned, etc.
+## Files to Modify
 
-### 6. Update `App.tsx`
-- Wrap with `AuthProvider`
-- Add `/auth` route
-- Protect `/account` route (redirect to `/auth` if not logged in)
+### 5. `src/hooks/useStrategyBacktest.ts`
+- Export `StrategyType` as union including `'custom'`
+- No changes to existing backtest functions
 
-### 7. Update `AppNav.tsx`
-- Show user avatar initials when logged in
-- Show "Sign In" link when logged out
-- Add sign-out option
+### 6. `src/components/sandbox/StrategySelector.tsx`
+- Add a 5th card: `{ id: 'custom', name: 'Build Your Own', subtitle: 'Custom Portfolio', icon: '🧩' }`
+- Render in same grid (the grid already handles odd counts)
 
-### 8. Update `Account.tsx` (Hub page)
-- Fetch real progress from database
-- Show user's display name and email
-- Derive badge status from progress records
-- Add sign-out button
+### 7. `src/pages/Sandbox.tsx`
+- When `selectedStrategy === 'custom'`, render `CustomPortfolioBuilder` instead of the slider + existing strategy flow
+- All existing strategy logic remains untouched
 
-### 9. Add progress tracking to module pages
-- At the end of each module, call `markComplete('module_complete', 'module-1')` etc.
-- Non-intrusive — just records completion when user reaches the end
+### 8. `supabase/functions/sandbox-evaluate/index.ts`
+- Modify the prompt to also handle custom portfolios: accept an optional `assets` array field
+- When assets are provided, mention the specific tickers and weights in the evaluation prompt
+- Existing strategy evaluation logic unchanged
 
-## Files summary
+## Key Design Decisions
 
-| Action | File |
-|--------|------|
-| Create | `src/contexts/AuthContext.tsx` |
-| Create | `src/pages/Auth.tsx` |
-| Create | `src/hooks/useUserProgress.ts` |
-| Modify | `src/App.tsx` — add AuthProvider, /auth route |
-| Modify | `src/components/AppNav.tsx` — auth-aware nav |
-| Modify | `src/pages/Account.tsx` — real progress data |
-| Migration | `profiles` + `user_progress` tables with RLS |
+- **Max 5 assets** enforced in UI (add button disabled at limit)
+- **Weight normalization**: When user adjusts one slider, others scale proportionally to maintain 100% total
+- **Same time period** (2021-01-01 to 2023-01-01) and benchmark (SPY) as existing strategies
+- **Data fetching**: Uses the same Yahoo Finance proxy with simulated fallback pattern from `useMarketData`
+- **Reuse**: MetricsPanel, StrategyChart, PortfolioRadarChart components work with the same `BacktestResult` type
+- **Edge function**: Same `sandbox-evaluate` function, extended prompt detects custom portfolio input
 
-## Design notes
-- Email confirmation is required by default (users verify email before signing in)
-- No changes to Sandbox, Scenarios, or Learning Path functionality
-- Progress tracking is additive — pages work fine without login, they just don't save
+## UI Layout (within the detail view)
+1. Asset selection panel (categorized grid)
+2. Selected assets with weight sliders + allocation bar
+3. "Run Backtest" button
+4. Results section (same layout as existing strategies): Metrics → Chart → Radar + AI → Transparency note
 
