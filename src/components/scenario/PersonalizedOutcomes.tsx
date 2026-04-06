@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Award, Sparkles, Loader2, Shield, Target, AlertTriangle, PieChart } from "lucide-react";
-import ReactMarkdown from "react-markdown";
+import { Award, Sparkles, Loader2, Shield, Target, AlertTriangle, PieChart, CheckCircle, Lightbulb, BookOpen } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { PortfolioMetrics, Position } from "@/hooks/useScenarioSimulation";
 import type { ScenarioPreset } from "@/data/scenario-presets";
@@ -20,6 +19,32 @@ interface Badge {
   color: string;
   description: string;
 }
+
+const actionableLessons = [
+  { text: "Compare your return vs. a diversified benchmark", icon: Target },
+  { text: "Assess concentration risk and its impact on volatility", icon: AlertTriangle },
+  { text: "Reflect on how defensive allocation could improve your Sharpe ratio", icon: Shield },
+];
+
+const parseSections = (text: string): { strengths: string[]; areas: string[] } => {
+  const strengths: string[] = [];
+  const areas: string[] = [];
+
+  const strengthsMatch = text.match(/\*\*Strengths\*\*[\s\S]*?(?=\*\*Areas to Explore\*\*|$)/i);
+  const areasMatch = text.match(/\*\*Areas to Explore\*\*[\s\S]*/i);
+
+  const extractBullets = (block: string): string[] => {
+    return block
+      .split('\n')
+      .map(l => l.replace(/^[\s*-]+/, '').trim())
+      .filter(l => l.length > 0 && !l.startsWith('**'));
+  };
+
+  if (strengthsMatch) strengths.push(...extractBullets(strengthsMatch[0]));
+  if (areasMatch) areas.push(...extractBullets(areasMatch[0]));
+
+  return { strengths, areas };
+};
 
 const PersonalizedOutcomes = ({ scenario, positions, metrics, currentDate }: PersonalizedOutcomesProps) => {
   const [summary, setSummary] = useState('');
@@ -85,6 +110,9 @@ const PersonalizedOutcomes = ({ scenario, positions, metrics, currentDate }: Per
     }
   };
 
+  const parsed = summary ? parseSections(summary) : null;
+  const hasSections = parsed && (parsed.strengths.length > 0 || parsed.areas.length > 0);
+
   return (
     <div className="rounded-xl border border-primary/20 bg-primary/5 p-5 space-y-4">
       <div className="flex items-center gap-2">
@@ -149,19 +177,64 @@ const PersonalizedOutcomes = ({ scenario, positions, metrics, currentDate }: Per
         </div>
       )}
 
-      {summary && (
-        <div className="prose prose-sm max-w-none">
-          <ReactMarkdown
-            components={{
-              p: ({ children }) => <p className="text-sm text-muted-foreground leading-relaxed mb-2">{children}</p>,
-              strong: ({ children }) => <strong className="text-foreground">{children}</strong>,
-              ul: ({ children }) => <ul className="text-sm text-muted-foreground space-y-1 list-disc pl-4">{children}</ul>,
-            }}
-          >
-            {summary}
-          </ReactMarkdown>
+      {/* Structured strengths / areas columns */}
+      {hasSections && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {parsed.strengths.length > 0 && (
+            <div className="rounded-lg border border-teal/20 bg-teal/5 p-3">
+              <div className="flex items-center gap-1.5 mb-2">
+                <CheckCircle className="h-3.5 w-3.5 text-teal" />
+                <span className="text-xs font-semibold text-teal">Strengths</span>
+              </div>
+              <ul className="space-y-1.5">
+                {parsed.strengths.map((s, i) => (
+                  <li key={i} className="text-xs text-muted-foreground leading-relaxed flex items-start gap-1.5">
+                    <span className="text-teal mt-0.5">•</span>
+                    {s}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {parsed.areas.length > 0 && (
+            <div className="rounded-lg border border-warm/20 bg-warm/5 p-3">
+              <div className="flex items-center gap-1.5 mb-2">
+                <Lightbulb className="h-3.5 w-3.5 text-warm" />
+                <span className="text-xs font-semibold text-warm">Areas to Explore</span>
+              </div>
+              <ul className="space-y-1.5">
+                {parsed.areas.map((a, i) => (
+                  <li key={i} className="text-xs text-muted-foreground leading-relaxed flex items-start gap-1.5">
+                    <span className="text-warm mt-0.5">•</span>
+                    {a}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       )}
+
+      {/* Fallback: if AI text doesn't have structured sections, show raw */}
+      {summary && !hasSections && (
+        <div className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
+          {summary}
+        </div>
+      )}
+
+      {/* Actionable lessons — always visible */}
+      <div className="rounded-lg border border-border bg-card p-3 space-y-2">
+        <div className="flex items-center gap-1.5 mb-1">
+          <BookOpen className="h-3.5 w-3.5 text-primary" />
+          <span className="text-xs font-semibold text-foreground">Reflect & Learn</span>
+        </div>
+        {actionableLessons.map((lesson, i) => (
+          <div key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
+            <lesson.icon className="h-3 w-3 mt-0.5 flex-shrink-0 text-primary/60" />
+            <span className="leading-relaxed">{lesson.text}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
