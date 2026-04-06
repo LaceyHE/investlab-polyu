@@ -214,7 +214,8 @@ const ScenarioSimulator = () => {
                     </div>
 
                     {/* Sidebar */}
-                    <div className="space-y-4">
+                    <div className="space-y-3">
+                      <AnalyticsPanel metrics={simulation.metrics} positions={simulation.state.positions} />
                       {isDotCom ? (
                         <DotComSidePanel
                           positions={simulation.state.positions}
@@ -233,7 +234,6 @@ const ScenarioSimulator = () => {
                           onUpdatePosition={simulation.updatePosition}
                         />
                       )}
-                      <AnalyticsPanel metrics={simulation.metrics} positions={simulation.state.positions} />
                     </div>
                   </div>
 

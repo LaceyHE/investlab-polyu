@@ -1,9 +1,8 @@
 import { useState, useMemo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Filter, Plus, X, DollarSign, Briefcase, LayoutGrid } from "lucide-react";
+import { motion } from "framer-motion";
+import { Filter, Plus, X, DollarSign, LayoutGrid } from "lucide-react";
 import { LineChart, Line, ResponsiveContainer, YAxis } from "recharts";
 import { Slider } from "@/components/ui/slider";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { dotcomStocks, industries, type DotComStock } from "@/data/dotcom-stocks";
@@ -45,17 +44,6 @@ const DotComSidePanel = ({
     return ((currentPrice - pos.entryPrice) / pos.entryPrice) * 100;
   };
 
-  const sectorExposure = useMemo(() => {
-    const map: Record<string, number> = {};
-    positions.forEach(pos => {
-      const stock = dotcomStocks.find(s => s.ticker === pos.ticker);
-      if (stock) {
-        map[stock.industry] = (map[stock.industry] || 0) + pos.weight;
-      }
-    });
-    return Object.entries(map).sort((a, b) => b[1] - a[1]);
-  }, [positions]);
-
   const filteredStocks = useMemo(() => {
     if (!filterIndustry) return dotcomStocks;
     return dotcomStocks.filter(s => s.industry === filterIndustry);
@@ -63,7 +51,7 @@ const DotComSidePanel = ({
 
   return (
     <div className="rounded-xl border border-border bg-card flex flex-col h-[calc(100vh-200px)]">
-      {/* Always-visible allocation bar */}
+      {/* Allocation bar */}
       <div className="p-4 border-b border-border flex-shrink-0">
         <div className="flex h-3 rounded-full overflow-hidden bg-secondary">
           {positions.map((pos, i) => (
@@ -87,156 +75,89 @@ const DotComSidePanel = ({
         </div>
       </div>
 
-      <Tabs defaultValue="universe" className="flex-1 flex flex-col min-h-0">
-        <TabsList className="mx-4 mt-3 grid grid-cols-2 flex-shrink-0">
-          <TabsTrigger value="universe" className="text-xs gap-1.5">
-            <LayoutGrid className="h-3 w-3" />
-            Stocks
-          </TabsTrigger>
-          <TabsTrigger value="portfolio" className="text-xs gap-1.5">
-            <Briefcase className="h-3 w-3" />
-            Portfolio
-          </TabsTrigger>
-        </TabsList>
+      {/* Active positions (compact, inline) */}
+      {positions.length > 0 && (
+        <div className="px-4 py-2 border-b border-border flex-shrink-0 space-y-1.5">
+          {positions.map((pos, i) => {
+            const pnl = getTickerReturn(pos);
+            const maxWeight = Math.min(100, pos.weight + cashWeight);
+            return (
+              <div key={pos.ticker} className="flex items-center gap-2">
+                <span
+                  className="h-2 w-2 rounded-full flex-shrink-0"
+                  style={{ backgroundColor: `hsl(${(i * 47 + 180) % 360} 50% 45%)` }}
+                />
+                <span className="text-xs font-medium text-foreground w-10">{pos.ticker}</span>
+                <Slider
+                  value={[pos.weight]}
+                  min={1}
+                  max={maxWeight}
+                  step={1}
+                  onValueChange={([v]) => onUpdatePosition(pos.ticker, v)}
+                  className="flex-1"
+                />
+                <span className="text-[10px] font-mono text-muted-foreground w-8 text-right">{pos.weight}%</span>
+                <span className={`text-[10px] font-mono w-12 text-right ${pnl >= 0 ? 'text-teal' : 'text-destructive'}`}>
+                  {pnl >= 0 ? '+' : ''}{pnl.toFixed(1)}%
+                </span>
+                <button
+                  onClick={() => onUpdatePosition(pos.ticker, 0)}
+                  className="text-muted-foreground hover:text-destructive transition-colors flex-shrink-0"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
-        {/* Stock Universe Tab */}
-        <TabsContent value="universe" className="flex-1 min-h-0 px-4 pb-4 flex flex-col">
-          {/* Sticky industry filter chips */}
-          <div className="flex items-center gap-1.5 flex-wrap mb-3 mt-1 sticky top-0 bg-card z-10 py-1 flex-shrink-0">
-            <Filter className="h-3 w-3 text-muted-foreground" />
+      {/* Header + filter chips */}
+      <div className="px-4 pt-3 flex-shrink-0">
+        <div className="flex items-center gap-1.5 mb-2">
+          <LayoutGrid className="h-3 w-3 text-muted-foreground" />
+          <span className="text-xs font-medium text-foreground">Stock Universe</span>
+        </div>
+        <div className="flex items-center gap-1.5 flex-wrap mb-2">
+          <Filter className="h-3 w-3 text-muted-foreground" />
+          <button
+            onClick={() => setFilterIndustry(null)}
+            className={`px-2 py-0.5 text-[10px] rounded-full transition-colors ${
+              !filterIndustry ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            All
+          </button>
+          {industries.map(ind => (
             <button
-              onClick={() => setFilterIndustry(null)}
+              key={ind}
+              onClick={() => setFilterIndustry(ind === filterIndustry ? null : ind)}
               className={`px-2 py-0.5 text-[10px] rounded-full transition-colors ${
-                !filterIndustry ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:text-foreground'
+                filterIndustry === ind ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:text-foreground'
               }`}
             >
-              All
+              {ind}
             </button>
-            {industries.map(ind => (
-              <button
-                key={ind}
-                onClick={() => setFilterIndustry(ind === filterIndustry ? null : ind)}
-                className={`px-2 py-0.5 text-[10px] rounded-full transition-colors ${
-                  filterIndustry === ind ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                {ind}
-              </button>
-            ))}
-          </div>
+          ))}
+        </div>
+      </div>
 
-          <ScrollArea className="flex-1">
-            <div className="space-y-2 pr-3">
-              {filteredStocks.map(stock => (
-                <StockUniverseTile
-                  key={stock.ticker}
-                  stock={stock}
-                  marketData={marketData?.[stock.ticker]}
-                  currentDate={currentDate}
-                  positionWeight={positions.find(p => p.ticker === stock.ticker)?.weight || 0}
-                  canBuy={totalAllocated < 100}
-                  onBuy={() => onUpdatePosition(stock.ticker, Math.min(10, 100 - totalAllocated))}
-                />
-              ))}
-            </div>
-          </ScrollArea>
-        </TabsContent>
-
-        {/* Portfolio Tab */}
-        <TabsContent value="portfolio" className="flex-1 min-h-0 px-4 pb-4">
-          <ScrollArea className="h-full">
-            <div className="pr-3">
-              {/* Sector exposure bar */}
-              {sectorExposure.length > 0 && (
-                <div className="mb-3 mt-1">
-                  <p className="text-[10px] text-muted-foreground mb-1.5">Sector Exposure</p>
-                  <div className="space-y-1">
-                    {sectorExposure.map(([sector, weight]) => (
-                      <div key={sector} className="flex items-center gap-2">
-                        <span className="text-[10px] text-muted-foreground w-20 truncate">{sector}</span>
-                        <div className="flex-1 h-1.5 rounded-full bg-secondary overflow-hidden">
-                          <div
-                            className="h-full rounded-full bg-primary/60 transition-all"
-                            style={{ width: `${(weight / Math.max(totalAllocated, 1)) * 100}%` }}
-                          />
-                        </div>
-                        <span className="text-[10px] font-mono text-muted-foreground w-8 text-right">{weight.toFixed(0)}%</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Position cards */}
-              <div className="space-y-2">
-                {positions.map((pos, i) => {
-                  const pnl = getTickerReturn(pos);
-                  const maxWeight = Math.min(100, pos.weight + cashWeight);
-                  const stock = dotcomStocks.find(s => s.ticker === pos.ticker);
-
-                  return (
-                    <motion.div
-                      key={pos.ticker}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      className="rounded-lg border border-border p-3"
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <span
-                            className="h-2 w-2 rounded-full"
-                            style={{ backgroundColor: `hsl(${(i * 47 + 180) % 360} 50% 45%)` }}
-                          />
-                          <span className="text-sm font-medium text-foreground">{pos.ticker}</span>
-                          {stock && (
-                            <span className="text-[9px] px-1 py-0.5 rounded bg-secondary text-muted-foreground">
-                              {stock.industry}
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className={`text-xs font-mono ${pnl >= 0 ? 'text-teal' : 'text-destructive'}`}>
-                            {pnl >= 0 ? '+' : ''}{pnl.toFixed(1)}%
-                          </span>
-                          <button
-                            onClick={() => onUpdatePosition(pos.ticker, 0)}
-                            className="text-muted-foreground hover:text-destructive transition-colors"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <Slider
-                          value={[pos.weight]}
-                          min={1}
-                          max={maxWeight}
-                          step={1}
-                          onValueChange={([v]) => onUpdatePosition(pos.ticker, v)}
-                          className="flex-1"
-                        />
-                        <span className="text-xs font-mono text-muted-foreground w-10 text-right">
-                          {pos.weight}%
-                        </span>
-                      </div>
-                      <div className="flex justify-between mt-1 text-xs text-muted-foreground">
-                        <span>${getTickerPrice(pos.ticker).toFixed(2)}</span>
-                        <span>Entry: ${pos.entryPrice.toFixed(2)}</span>
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </div>
-
-              {positions.length === 0 && (
-                <div className="text-center py-8 text-sm text-muted-foreground">
-                  Switch to Stocks tab to add positions
-                </div>
-              )}
-            </div>
-          </ScrollArea>
-        </TabsContent>
-      </Tabs>
+      {/* Stock list */}
+      <ScrollArea className="flex-1 px-4 pb-4">
+        <div className="space-y-2 pr-3">
+          {filteredStocks.map(stock => (
+            <StockUniverseTile
+              key={stock.ticker}
+              stock={stock}
+              marketData={marketData?.[stock.ticker]}
+              currentDate={currentDate}
+              positionWeight={positions.find(p => p.ticker === stock.ticker)?.weight || 0}
+              canBuy={totalAllocated < 100}
+              onBuy={() => onUpdatePosition(stock.ticker, Math.min(10, 100 - totalAllocated))}
+            />
+          ))}
+        </div>
+      </ScrollArea>
     </div>
   );
 };
@@ -306,7 +227,6 @@ const StockUniverseTile = ({
                 )}
               </div>
             </div>
-            {/* Mini sparkline */}
             <div className="h-6 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={sparkData}>
