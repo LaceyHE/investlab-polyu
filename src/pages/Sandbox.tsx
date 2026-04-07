@@ -101,6 +101,17 @@ const Sandbox = () => {
 
   const sliderConfig = selectedStrategy ? sliderConfigs[selectedStrategy] : null;
 
+  // Track backtest runs
+  useEffect(() => {
+    if (selectedStrategy && selectedStrategy !== 'custom' && result && trackedStrategy.current !== selectedStrategy) {
+      trackedStrategy.current = selectedStrategy;
+      markComplete("sandbox_backtest", selectedStrategy, {
+        strategy: strategyDef?.name || selectedStrategy,
+        param: currentParam,
+      });
+    }
+  }, [selectedStrategy, result, markComplete, strategyDef, currentParam]);
+
   const handleParamChange = (value: number[]) => {
     if (!selectedStrategy) return;
     setParams(prev => ({ ...prev, [selectedStrategy]: value[0] }));

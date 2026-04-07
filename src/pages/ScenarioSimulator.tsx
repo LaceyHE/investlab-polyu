@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Compass, ArrowLeft, ChevronRight, Calendar, TrendingDown } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -17,6 +17,7 @@ import { useMarketData, type TimeAggregation } from "@/hooks/useMarketData";
 import { useScenarioSimulation } from "@/hooks/useScenarioSimulation";
 import { usePushMessages } from "@/hooks/usePushMessages";
 import { getStocksForScenario, getIndustriesForScenario } from "@/data/scenario-stocks";
+import { useUserProgress } from "@/hooks/useUserProgress";
 
 const ScenarioSimulator = () => {
   const [selectedScenario, setSelectedScenario] = useState<ScenarioPreset | null>(null);
