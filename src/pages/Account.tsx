@@ -239,14 +239,14 @@ const Account = () => {
 
           {/* Badges */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
-            <Card>
+            <Card className="h-full flex flex-col">
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2">
                   <Award className="h-4 w-4 text-primary" /> Badges Earned
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-3">
+              <CardContent className="flex-1 min-h-0">
+                <div className="grid grid-cols-2 gap-3 max-h-[280px] overflow-y-auto pr-1">
                   {badges.map((b) => (
                     <div key={b.label} className={`rounded-lg border p-3 text-center transition-colors ${b.earned ? "border-primary/30 bg-primary/5" : "border-border bg-secondary/30 opacity-50"}`}>
                       <Award className={`h-5 w-5 mx-auto mb-1 ${b.earned ? "text-primary" : "text-muted-foreground"}`} />
