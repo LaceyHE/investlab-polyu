@@ -1,83 +1,60 @@
 
 
-# Add "Portfolio Builder" Module to Sandbox
+# Link Hub to Real Activity + Seed Lacey's Data
 
-## Overview
-Add a fifth option card "Build Your Own Portfolio" to the Sandbox strategy selector. Users pick up to 5 assets from a curated list (~15 tickers across stocks, ETFs, bonds, gold), assign weights via sliders (must total 100%), then see a backtest with chart, metrics, radar chart, and AI evaluation — all reusing existing components and patterns.
+## Two parts
 
-## Architecture
+### Part A: Seed Lacey's progress records
 
-```text
-Sandbox.tsx
-├── StrategySelector (existing 4 + new "custom" card)
-├── [if custom selected]
-│   ├── CustomPortfolioBuilder (NEW) — asset picker + weight sliders
-│   ├── useCustomBacktest (NEW hook) — fetch multi-ticker data, compute portfolio
-│   ├── MetricsPanel (REUSED)
-│   ├── StrategyChart (REUSED)
-│   ├── CustomRadarChart (NEW) — diversification-aware scoring
-│   ├── PortfolioEvaluation variant (REUSED edge function)
-│   └── Transparency note
-```
+Insert realistic activity records for user `dc4d1350-3439-4e25-9cca-3582239ace6b` into `user_progress` using the insert tool:
 
-## Files to Create
+- **3 module completions**: `module_complete` for modules 1, 2, 3
+- **2 scenario runs**: `scenario_run` for `dotcom` and `covid`
+- **2 sandbox backtests**: `sandbox_backtest` for `allocation` (60/40) and `momentum` (Speed Racer)
+- **1 custom portfolio**: `sandbox_custom` with sample assets/weights
+- **3 knowledge points**: `knowledge_point` for concepts like `fundamental-thinking`, `technical-thinking`, `momentum-thinking`
 
-### 1. `src/data/portfolio-assets.ts`
-Curated asset universe with metadata:
-- ~15 assets grouped by category: Technology (AAPL, MSFT), Finance (JPM), Healthcare (JNJ), Consumer (PG, KO), Energy (XOM), Industrials (CAT), ETFs (SPY, QQQ), Bonds (AGG), Alternatives (GLD)
-- Each entry: `{ ticker, name, category, sector }`
+Timestamps spread over the past 2 weeks so the timeline looks natural.
 
-### 2. `src/hooks/useCustomBacktest.ts`
-- Reuses `useMarketData` from existing hook to fetch price data for selected tickers + SPY benchmark
-- Aligns all tickers by date, computes weighted daily portfolio returns
-- Monthly rebalancing, starts at $10,000
-- Computes same metrics as existing strategies (CAGR, volatility, max drawdown, Sharpe, worst quarter)
-- Returns `BacktestResult` (same type as existing strategies)
+### Part B: Wire tracking calls across the app
 
-### 3. `src/components/sandbox/CustomPortfolioBuilder.tsx`
-Main UI component with:
-- **Asset picker**: Grouped by category, click to add (max 5), click X to remove
-- **Weight sliders**: One per selected asset, auto-normalize to 100%
-- **Allocation bar**: Visual horizontal bar showing weight distribution
-- **Run Backtest button**: Triggers data fetch and computation
-- On results: renders MetricsPanel, StrategyChart, radar chart, AI evaluation (reusing existing components)
+**Files to modify:**
 
-### 4. `src/components/sandbox/CustomRadarScoring.ts`
-Diversification-aware radar scoring:
-- Return, Risk, Stability, Consistency, Efficiency — same formulas as existing `RadarScoring.ts`
-- **Diversification**: scores based on number of unique sectors + number of asset classes (stocks/ETFs/bonds/gold) — multi-class portfolios score higher
+1. **`src/pages/ModuleOne.tsx` through `ModuleSix.tsx`** (6 files)
+   - Import `useUserProgress`
+   - Call `markComplete("module_view", "module-N")` on mount
+   - Call `markComplete("module_complete", "module-N")` when user clicks "Continue to next module"
+   - Track knowledge points from educational content sections
 
-## Files to Modify
+2. **`src/pages/Sandbox.tsx`**
+   - When backtest results render, call `markComplete("sandbox_backtest", strategyId, { strategy })`
+   - For custom portfolio, call `markComplete("sandbox_custom", "custom-portfolio", { assets })`
 
-### 5. `src/hooks/useStrategyBacktest.ts`
-- Export `StrategyType` as union including `'custom'`
-- No changes to existing backtest functions
+3. **`src/pages/ScenarioSimulator.tsx`**
+   - When user selects a scenario, call `markComplete("scenario_run", scenarioId)`
 
-### 6. `src/components/sandbox/StrategySelector.tsx`
-- Add a 5th card: `{ id: 'custom', name: 'Build Your Own', subtitle: 'Custom Portfolio', icon: '🧩' }`
-- Render in same grid (the grid already handles odd counts)
+4. **`src/hooks/useUserProgress.ts`**
+   - Add `getActivities(type)` helper returning filtered records with metadata
+   - Add `activityCount(type)` helper
 
-### 7. `src/pages/Sandbox.tsx`
-- When `selectedStrategy === 'custom'`, render `CustomPortfolioBuilder` instead of the slider + existing strategy flow
-- All existing strategy logic remains untouched
+5. **`src/pages/Account.tsx`** — Rebuild Hub cards with real data:
+   - **Learning Progress**: Show visited vs completed with dates
+   - **Activity Timeline**: Replace static AI Commentary with chronological feed of recent actions ("Ran 60/40 backtest", "Explored Dot-Com scenario")
+   - **Sandbox/Scenario stats**: Show counts and which strategies/scenarios were tried
+   - **Radar chart**: Scores driven by actual activity counts
+   - **Badges**: Add "Portfolio Architect" (custom portfolio), "History Student" (all scenarios), keep existing ones now earnable
+   - **Knowledge Points**: Show concept tags from `knowledge_point` records
 
-### 8. `supabase/functions/sandbox-evaluate/index.ts`
-- Modify the prompt to also handle custom portfolios: accept an optional `assets` array field
-- When assets are provided, mention the specific tickers and weights in the evaluation prompt
-- Existing strategy evaluation logic unchanged
+### Summary of changes
 
-## Key Design Decisions
+| Action | File(s) |
+|--------|---------|
+| Insert | ~10 rows into `user_progress` for Lacey |
+| Modify | `ModuleOne.tsx` – `ModuleSix.tsx` (add tracking) |
+| Modify | `Sandbox.tsx` (track backtests) |
+| Modify | `ScenarioSimulator.tsx` (track scenario runs) |
+| Modify | `useUserProgress.ts` (add helpers) |
+| Modify | `Account.tsx` (rebuild with real data) |
 
-- **Max 5 assets** enforced in UI (add button disabled at limit)
-- **Weight normalization**: When user adjusts one slider, others scale proportionally to maintain 100% total
-- **Same time period** (2021-01-01 to 2023-01-01) and benchmark (SPY) as existing strategies
-- **Data fetching**: Uses the same Yahoo Finance proxy with simulated fallback pattern from `useMarketData`
-- **Reuse**: MetricsPanel, StrategyChart, PortfolioRadarChart components work with the same `BacktestResult` type
-- **Edge function**: Same `sandbox-evaluate` function, extended prompt detects custom portfolio input
-
-## UI Layout (within the detail view)
-1. Asset selection panel (categorized grid)
-2. Selected assets with weight sliders + allocation bar
-3. "Run Backtest" button
-4. Results section (same layout as existing strategies): Metrics → Chart → Radar + AI → Transparency note
+No database schema changes needed — the existing `user_progress` table already supports all activity types.
 
