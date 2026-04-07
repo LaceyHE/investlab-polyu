@@ -117,7 +117,7 @@ const ModuleSix = () => {
             placeholder="Take a moment to reflect..."
           />
           <button
-            onClick={() => setCompleted(true)}
+            onClick={() => { setCompleted(true); markComplete("module_complete", "module-6"); }}
             disabled={!reflectionAnswer.trim()}
             className="rounded-xl bg-gradient-warm px-6 py-3 text-sm font-semibold text-primary-foreground disabled:opacity-40"
           >
