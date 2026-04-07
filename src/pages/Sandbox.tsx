@@ -87,6 +87,8 @@ const Sandbox = () => {
     currentParam,
     marketData?.spy,
     marketData?.agg,
+    marketData?.qqq,
+    marketData?.gld,
   );
 
   const strategyDef = useMemo(
