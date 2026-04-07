@@ -25,6 +25,15 @@ const ScenarioSimulator = () => {
   const [showDrawdown, setShowDrawdown] = useState(false);
   const [showVolatility, setShowVolatility] = useState(false);
   const [showSharpe, setShowSharpe] = useState(false);
+  const { markComplete } = useUserProgress();
+  const trackedScenario = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (selectedScenario && trackedScenario.current !== selectedScenario.id) {
+      trackedScenario.current = selectedScenario.id;
+      markComplete("scenario_run", selectedScenario.id, { scenario: selectedScenario.name });
+    }
+  }, [selectedScenario, markComplete]);
 
   const scenarioStocks = useMemo(() => selectedScenario ? getStocksForScenario(selectedScenario.id) : [], [selectedScenario]);
   const scenarioIndustries = useMemo(() => selectedScenario ? getIndustriesForScenario(selectedScenario.id) : [], [selectedScenario]);
