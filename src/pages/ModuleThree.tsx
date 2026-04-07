@@ -87,6 +87,16 @@ const ModuleThree = () => {
   const [universe, setUniverse] = useState<Universe>("sp500");
   const [lens, setLens] = useState<StrategyLens>("trendfollower");
   const [viewed, setViewed] = useState(false);
+  const { markComplete } = useUserProgress();
+  const tracked = useRef(false);
+
+  useEffect(() => {
+    if (!tracked.current) {
+      tracked.current = true;
+      markComplete("module_view", "module-3");
+      markComplete("knowledge_point", "stock-filtering", { module: 3 });
+    }
+  }, [markComplete]);
 
   const stocks = universe === "sp500" ? sp500Stocks : nasdaq100Stocks;
 

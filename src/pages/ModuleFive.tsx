@@ -37,6 +37,16 @@ const envImpact: Record<EnvToggle, { volatility: string; drawdown: string; note:
 const ModuleFive = () => {
   const [env, setEnv] = useState<EnvToggle>("neutral");
   const [reflectionSubmitted, setReflectionSubmitted] = useState(false);
+  const { markComplete } = useUserProgress();
+  const tracked = useRef(false);
+
+  useEffect(() => {
+    if (!tracked.current) {
+      tracked.current = true;
+      markComplete("module_view", "module-5");
+      markComplete("knowledge_point", "risk-exposure", { module: 5 });
+    }
+  }, [markComplete]);
 
   const strategyMix = [
     { strategy: "Trend Following", pct: 42, color: "bg-primary" },

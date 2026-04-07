@@ -62,6 +62,16 @@ const ModuleFour = () => {
   const [selectedStock, setSelectedStock] = useState<string | null>(null);
   const [selectedRationale, setSelectedRationale] = useState<string | null>(null);
   const [analysisShown, setAnalysisShown] = useState(false);
+  const { markComplete } = useUserProgress();
+  const tracked = useRef(false);
+
+  useEffect(() => {
+    if (!tracked.current) {
+      tracked.current = true;
+      markComplete("module_view", "module-4");
+      markComplete("knowledge_point", "portfolio-construction", { module: 4 });
+    }
+  }, [markComplete]);
 
   const addPosition = () => {
     if (!selectedStock || !selectedRationale || !strategy) return;

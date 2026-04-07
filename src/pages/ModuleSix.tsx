@@ -8,6 +8,16 @@ import { useUserProgress } from "@/hooks/useUserProgress";
 const ModuleSix = () => {
   const [reflectionAnswer, setReflectionAnswer] = useState("");
   const [completed, setCompleted] = useState(false);
+  const { markComplete } = useUserProgress();
+  const tracked = useRef(false);
+
+  useEffect(() => {
+    if (!tracked.current) {
+      tracked.current = true;
+      markComplete("module_view", "module-6");
+      markComplete("knowledge_point", "behavioral-reflection", { module: 6 });
+    }
+  }, [markComplete]);
 
   return (
     <AppLayout>

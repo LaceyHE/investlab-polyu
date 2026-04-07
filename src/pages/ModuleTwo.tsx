@@ -78,6 +78,15 @@ const ModuleTwo = () => {
   const [selectedEnv, setSelectedEnv] = useState<Environment | null>(null);
   const [exerciseStrategy, setExerciseStrategy] = useState<Strategy | null>(null);
   const [exerciseEnv, setExerciseEnv] = useState<Environment | null>(null);
+  const { markComplete } = useUserProgress();
+  const tracked = useRef(false);
+
+  useEffect(() => {
+    if (!tracked.current) {
+      tracked.current = true;
+      markComplete("module_view", "module-2");
+    }
+  }, [markComplete]);
   const [prediction, setPrediction] = useState("");
   const [revealed, setRevealed] = useState(false);
   const [completedSections, setCompletedSections] = useState<number[]>([]);
