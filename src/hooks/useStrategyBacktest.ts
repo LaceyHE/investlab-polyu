@@ -63,12 +63,16 @@ function generateFallbackData(ticker: string): DailyPrice[] {
   const start = new Date(START);
   const end = new Date(END);
 
-  // SPY: ~380→~480 in 2021, peaks ~480 mid-2022, ends ~380
-  // AGG: ~115→~110 in 2021, drops to ~95 by end 2022
-  const isSPY = ticker === 'SPY';
-  let price = isSPY ? 380 : 115;
-  const dailyDrift = isSPY ? 0.0001 : -0.0001;
-  const vol = isSPY ? 0.012 : 0.004;
+  // Realistic price behavior per ticker in 2021-2022
+  const configs: Record<string, { startPrice: number; dailyDrift: number; vol: number; regime2022: number }> = {
+    SPY: { startPrice: 380, dailyDrift: 0.0001, vol: 0.012, regime2022: -0.0004 },
+    AGG: { startPrice: 115, dailyDrift: -0.0001, vol: 0.004, regime2022: -0.0003 },
+    QQQ: { startPrice: 310, dailyDrift: 0.00015, vol: 0.015, regime2022: -0.0006 },
+    GLD: { startPrice: 170, dailyDrift: 0.00005, vol: 0.008, regime2022: 0.0001 },
+  };
+
+  const cfg = configs[ticker] || configs.SPY;
+  let price = cfg.startPrice;
 
   let seed = ticker.charCodeAt(0) * 137;
   const rand = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
@@ -76,11 +80,10 @@ function generateFallbackData(ticker: string): DailyPrice[] {
   const cur = new Date(start);
   while (cur <= end) {
     if (cur.getDay() !== 0 && cur.getDay() !== 6) {
-      // Add regime: 2022 was a down year
       const year = cur.getFullYear();
-      const regime = year === 2022 ? (isSPY ? -0.0004 : -0.0003) : (isSPY ? 0.0006 : 0.0001);
-      price *= 1 + regime + dailyDrift + (rand() - 0.5) * vol * 2;
-      price = Math.max(price, isSPY ? 300 : 80);
+      const regime = year === 2022 ? cfg.regime2022 : (cfg.dailyDrift > 0 ? 0.0006 : 0.0001);
+      price *= 1 + regime + cfg.dailyDrift + (rand() - 0.5) * cfg.vol * 2;
+      price = Math.max(price, cfg.startPrice * 0.6);
       points.push({ date: cur.toISOString().split('T')[0], close: price });
     }
     cur.setDate(cur.getDate() + 1);
