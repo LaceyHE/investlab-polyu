@@ -317,7 +317,7 @@ const ModuleTwo = () => {
                 ? "bg-gradient-warm text-primary-foreground hover:shadow-lg hover:shadow-primary/20"
                 : "bg-secondary text-muted-foreground cursor-not-allowed"
             }`}
-            onClick={(e) => { if (completedSections.length < 3) e.preventDefault(); }}
+            onClick={(e) => { if (completedSections.length < 3) { e.preventDefault(); } else { markComplete("module_complete", "module-2"); } }}
           >
             Continue to Module 3
             <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
