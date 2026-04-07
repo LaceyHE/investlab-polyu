@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, ArrowRight, ChevronRight, CheckCircle2, AlertCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
+import { useUserProgress } from "@/hooks/useUserProgress";
 
 type Strategy = "buyhold" | "trendfollowing" | "meanreversion" | "eventdriven";
 

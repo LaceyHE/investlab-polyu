@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, ChevronRight, Award, Brain, Target, AlertTriangle, Unlock } from "lucide-react";
 import { Link } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
+import { useUserProgress } from "@/hooks/useUserProgress";
 
 const ModuleSix = () => {
   const [reflectionAnswer, setReflectionAnswer] = useState("");

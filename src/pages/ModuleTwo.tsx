@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, ArrowRight, ChevronRight, TrendingUp, Minus, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import ProgressBar from "@/components/ProgressBar";
+import { useUserProgress } from "@/hooks/useUserProgress";
 
 type Environment = "trending" | "sideways" | "crisis";
 type Strategy = "buyhold" | "trendfollowing" | "meanreversion";
