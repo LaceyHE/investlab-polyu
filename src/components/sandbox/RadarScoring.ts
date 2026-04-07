@@ -35,8 +35,11 @@ export function computeRadarScores(
   } else if (strategy === 'income') {
     const balance = 1 - Math.abs(param - 0.5) * 2;
     divScore = clamp(balance * 8 + 2);
+  } else if (strategy === 'momentum') {
+    // Cross-asset momentum: rotates across 4 asset classes (SPY, QQQ, AGG, GLD)
+    divScore = clamp(6);
   } else {
-    // Trend / momentum: single asset, lower diversification
+    // Trend: single asset, lower diversification
     divScore = clamp(3);
   }
 
