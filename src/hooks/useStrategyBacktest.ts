@@ -63,12 +63,16 @@ function generateFallbackData(ticker: string): DailyPrice[] {
   const start = new Date(START);
   const end = new Date(END);
 
-  // SPY: ~380→~480 in 2021, peaks ~480 mid-2022, ends ~380
-  // AGG: ~115→~110 in 2021, drops to ~95 by end 2022
-  const isSPY = ticker === 'SPY';
-  let price = isSPY ? 380 : 115;
-  const dailyDrift = isSPY ? 0.0001 : -0.0001;
-  const vol = isSPY ? 0.012 : 0.004;
+  // Realistic price behavior per ticker in 2021-2022
+  const configs: Record<string, { startPrice: number; dailyDrift: number; vol: number; regime2022: number }> = {
+    SPY: { startPrice: 380, dailyDrift: 0.0001, vol: 0.012, regime2022: -0.0004 },
+    AGG: { startPrice: 115, dailyDrift: -0.0001, vol: 0.004, regime2022: -0.0003 },
+    QQQ: { startPrice: 310, dailyDrift: 0.00015, vol: 0.015, regime2022: -0.0006 },
+    GLD: { startPrice: 170, dailyDrift: 0.00005, vol: 0.008, regime2022: 0.0001 },
+  };
+
+  const cfg = configs[ticker] || configs.SPY;
+  let price = cfg.startPrice;
 
   let seed = ticker.charCodeAt(0) * 137;
   const rand = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
@@ -76,11 +80,10 @@ function generateFallbackData(ticker: string): DailyPrice[] {
   const cur = new Date(start);
   while (cur <= end) {
     if (cur.getDay() !== 0 && cur.getDay() !== 6) {
-      // Add regime: 2022 was a down year
       const year = cur.getFullYear();
-      const regime = year === 2022 ? (isSPY ? -0.0004 : -0.0003) : (isSPY ? 0.0006 : 0.0001);
-      price *= 1 + regime + dailyDrift + (rand() - 0.5) * vol * 2;
-      price = Math.max(price, isSPY ? 300 : 80);
+      const regime = year === 2022 ? cfg.regime2022 : (cfg.dailyDrift > 0 ? 0.0006 : 0.0001);
+      price *= 1 + regime + cfg.dailyDrift + (rand() - 0.5) * cfg.vol * 2;
+      price = Math.max(price, cfg.startPrice * 0.6);
       points.push({ date: cur.toISOString().split('T')[0], close: price });
     }
     cur.setDate(cur.getDate() + 1);
@@ -92,11 +95,13 @@ export function useMarketPrices() {
   return useQuery({
     queryKey: ['sandbox-market-data', START, END],
     queryFn: async () => {
-      const [spy, agg] = await Promise.all([
+      const [spy, agg, qqq, gld] = await Promise.all([
         fetchYahooData('SPY'),
         fetchYahooData('AGG'),
+        fetchYahooData('QQQ'),
+        fetchYahooData('GLD'),
       ]);
-      return { spy, agg };
+      return { spy, agg, qqq, gld };
     },
     staleTime: 1000 * 60 * 60,
     gcTime: 1000 * 60 * 60 * 24,
@@ -292,43 +297,90 @@ function backtestIncome(spy: DailyPrice[], agg: DailyPrice[], incomeWeight: numb
   return { dates, portfolioValues, benchmarkValues, ...computeMetrics(portfolioValues, dates) };
 }
 
-// ── Strategy 4: Speed Racer (Momentum) ─────────────────────────────────────
+// ── Strategy 4: Speed Racer (Cross-Asset Momentum) ─────────────────────────
 
-function backtestMomentum(spy: DailyPrice[], horizon: number): BacktestResult {
-  // horizon: 0=short-term (1 month lookback), 1=long-term (12 month lookback)
-  const lookbackDays = Math.round(21 + horizon * 231); // 21 days (1mo) to 252 days (12mo)
+interface AssetSeries {
+  ticker: string;
+  prices: DailyPrice[];
+}
 
-  let cash = INITIAL_CAPITAL;
-  let shares = 0;
-  let invested = false;
+function backtestMomentum(
+  spy: DailyPrice[],
+  qqq: DailyPrice[],
+  agg: DailyPrice[],
+  gld: DailyPrice[],
+  horizon: number,
+): BacktestResult {
+  // horizon: 0→1 month lookback, 1→12 month lookback
+  const lookbackDays = Math.round(21 + horizon * 231); // 21 (1mo) to 252 (12mo)
+
+  // Build date-aligned price maps for all 4 assets
+  const assets: AssetSeries[] = [
+    { ticker: 'SPY', prices: spy },
+    { ticker: 'QQQ', prices: qqq },
+    { ticker: 'AGG', prices: agg },
+    { ticker: 'GLD', prices: gld },
+  ];
+
+  const priceMaps = assets.map(a => new Map(a.prices.map(d => [d.date, d.close])));
+
+  // Use SPY dates as the master calendar, filter to dates where ALL assets have data
+  const allDates = spy
+    .map(d => d.date)
+    .filter(date => priceMaps.every(m => m.has(date)));
 
   const portfolioValues: number[] = [];
   const benchmarkValues: number[] = [];
   const dates: string[] = [];
   const signals: SignalMarker[] = [];
 
-  spy.forEach((d, i) => {
-    if (i >= lookbackDays) {
-      const pastPrice = spy[i - lookbackDays].close;
-      const momentum = (d.close - pastPrice) / pastPrice;
+  let portfolioValue = INITIAL_CAPITAL;
+  let currentAssetIdx = 0; // start in SPY
+  let shares = INITIAL_CAPITAL / priceMaps[0].get(allDates[0])!;
+  let lastRebalanceMonth = -1;
 
-      if (momentum > 0 && !invested) {
-        shares = cash / d.close;
-        cash = 0;
-        invested = true;
-        signals.push({ date: d.date, type: 'buy', price: d.close });
-      } else if (momentum <= 0 && invested) {
-        cash = shares * d.close;
-        shares = 0;
-        invested = false;
-        signals.push({ date: d.date, type: 'sell', price: d.close });
+  allDates.forEach((date, i) => {
+    const month = new Date(date).getMonth();
+    const currentPrice = priceMaps[currentAssetIdx].get(date)!;
+
+    // Monthly rebalancing: pick the asset with the best momentum
+    if (i > 0 && month !== lastRebalanceMonth && i >= lookbackDays) {
+      // Calculate momentum for each asset
+      const lookbackDate = allDates[i - lookbackDays];
+      let bestIdx = 0;
+      let bestMomentum = -Infinity;
+
+      priceMaps.forEach((pm, idx) => {
+        const pastPrice = pm.get(lookbackDate);
+        const nowPrice = pm.get(date);
+        if (pastPrice && nowPrice) {
+          const mom = (nowPrice - pastPrice) / pastPrice;
+          if (mom > bestMomentum) {
+            bestMomentum = mom;
+            bestIdx = idx;
+          }
+        }
+      });
+
+      // Switch asset if a better one is found
+      if (bestIdx !== currentAssetIdx) {
+        // Sell current
+        portfolioValue = shares * currentPrice;
+        signals.push({ date, type: 'sell', price: currentPrice });
+
+        // Buy new best asset
+        const newPrice = priceMaps[bestIdx].get(date)!;
+        shares = portfolioValue / newPrice;
+        currentAssetIdx = bestIdx;
+        signals.push({ date, type: 'buy', price: newPrice });
       }
     }
+    lastRebalanceMonth = month;
 
-    const val = invested ? shares * d.close : cash;
+    const val = shares * priceMaps[currentAssetIdx].get(date)!;
     portfolioValues.push(val);
-    benchmarkValues.push((INITIAL_CAPITAL / spy[0].close) * d.close);
-    dates.push(d.date);
+    benchmarkValues.push((INITIAL_CAPITAL / priceMaps[0].get(allDates[0])!) * priceMaps[0].get(date)!);
+    dates.push(date);
   });
 
   return { dates, portfolioValues, benchmarkValues, signals, ...computeMetrics(portfolioValues, dates) };
@@ -343,6 +395,8 @@ export function useStrategyBacktest(
   param: number, // 0-1 normalized slider value
   spy: DailyPrice[] | undefined,
   agg: DailyPrice[] | undefined,
+  qqq?: DailyPrice[],
+  gld?: DailyPrice[],
 ) {
   return useMemo<BacktestResult | null>(() => {
     if (!spy || spy.length === 0) return null;
@@ -359,10 +413,12 @@ export function useStrategyBacktest(
         if (!agg || agg.length === 0) return null;
         return backtestIncome(spy, agg, param);
       }
-      case 'momentum':
-        return backtestMomentum(spy, param);
+      case 'momentum': {
+        if (!qqq || !agg || !gld || qqq.length === 0 || agg.length === 0 || gld.length === 0) return null;
+        return backtestMomentum(spy, qqq, agg, gld, param);
+      }
       default:
         return null;
     }
-  }, [strategy, param, spy, agg]);
+  }, [strategy, param, spy, agg, qqq, gld]);
 }

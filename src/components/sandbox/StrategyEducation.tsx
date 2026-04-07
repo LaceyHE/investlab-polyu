@@ -80,24 +80,24 @@ const content: Record<StrategyType, StrategyContent> = {
   },
   momentum: {
     explanation:
-      "This strategy bets on recent winners. It looks at which assets have performed best over a recent period and invests more heavily in them. The logic is simple: assets that have been going up tend to keep going up — at least for a while.",
+      "This strategy picks the single best-performing asset each month from a diversified set: stocks (SPY), tech (QQQ), bonds (AGG), and gold (GLD). It calculates which one went up the most over a chosen lookback period, then puts all the money into that asset — switching monthly if a new winner emerges.",
     worksWell: [
-      "Strong trending markets where winners keep winning",
-      "Bull markets with clear sector leadership",
-      "Periods where one asset class significantly outperforms the other",
+      "Strong trending markets where one asset class clearly leads (e.g. tech in 2021)",
+      "Inflationary or crisis periods where gold or bonds outperform stocks",
+      "Markets with clear rotations between asset classes",
     ],
     struggles: [
-      "Market reversals where yesterday's winners suddenly become losers",
-      "Choppy sideways markets with no clear momentum",
-      "Crash recoveries where beaten-down assets bounce back fastest",
+      "Choppy, sideways markets where leadership changes constantly",
+      "Sudden reversals — it may switch into an asset just as it peaks",
+      "Periods where all assets decline together (no safe haven wins)",
     ],
     adjustments: [
-      "Short-term lookback (slider left) is more aggressive — it chases recent moves but can whipsaw in volatile markets",
-      "Long-term lookback (slider right) is more stable — it follows bigger trends and avoids noise",
-      "If you see too many trades and inconsistent results, try a longer lookback period",
+      "Short-term lookback (slider left) reacts fast — more switching, more volatile, catches quick trends",
+      "Long-term lookback (slider right) is smoother — fewer switches, follows major trends, less noise",
+      "If you see too many asset switches, move the slider right for a longer horizon",
     ],
     proTip:
-      "Momentum works until it doesn't — always consider what happens when the trend reverses.",
+      "Momentum rotates between 4 very different assets — watch how it shifts from stocks to gold or bonds in downturns.",
   },
   custom: {
     explanation: "You're building your own portfolio by selecting individual assets and choosing how much to invest in each one. This teaches you how diversification works in practice.",
