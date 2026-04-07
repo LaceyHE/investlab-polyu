@@ -191,7 +191,7 @@ const ModuleFive = () => {
             className={`group inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold transition-all ${
               reflectionSubmitted ? "bg-gradient-warm text-primary-foreground" : "bg-secondary text-muted-foreground cursor-not-allowed"
             }`}
-            onClick={(e) => { if (!reflectionSubmitted) e.preventDefault(); }}
+            onClick={(e) => { if (!reflectionSubmitted) { e.preventDefault(); } else { markComplete("module_complete", "module-5"); } }}
           >
             Continue to Module 6 <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
           </Link>
