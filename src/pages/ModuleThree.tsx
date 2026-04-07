@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, ArrowRight, ChevronRight, Eye } from "lucide-react";
 import { Link } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import ProgressBar from "@/components/ProgressBar";
+import { useUserProgress } from "@/hooks/useUserProgress";
 
 type Universe = "sp500" | "nasdaq100";
 type StrategyLens = "trendfollower" | "meanreversion" | "buyhold";
@@ -86,6 +87,16 @@ const ModuleThree = () => {
   const [universe, setUniverse] = useState<Universe>("sp500");
   const [lens, setLens] = useState<StrategyLens>("trendfollower");
   const [viewed, setViewed] = useState(false);
+  const { markComplete } = useUserProgress();
+  const tracked = useRef(false);
+
+  useEffect(() => {
+    if (!tracked.current) {
+      tracked.current = true;
+      markComplete("module_view", "module-3");
+      markComplete("knowledge_point", "stock-filtering", { module: 3 });
+    }
+  }, [markComplete]);
 
   const stocks = universe === "sp500" ? sp500Stocks : nasdaq100Stocks;
 
@@ -200,7 +211,7 @@ const ModuleThree = () => {
             className={`group inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold transition-all ${
               viewed ? "bg-gradient-warm text-primary-foreground" : "bg-secondary text-muted-foreground cursor-not-allowed"
             }`}
-            onClick={(e) => { if (!viewed) e.preventDefault(); }}
+            onClick={(e) => { if (!viewed) { e.preventDefault(); } else { markComplete("module_complete", "module-3"); } }}
           >
             Continue to Module 4
             <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />

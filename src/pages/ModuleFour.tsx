@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, ArrowRight, ChevronRight, CheckCircle2, AlertCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
+import { useUserProgress } from "@/hooks/useUserProgress";
 
 type Strategy = "buyhold" | "trendfollowing" | "meanreversion" | "eventdriven";
 
@@ -61,6 +62,16 @@ const ModuleFour = () => {
   const [selectedStock, setSelectedStock] = useState<string | null>(null);
   const [selectedRationale, setSelectedRationale] = useState<string | null>(null);
   const [analysisShown, setAnalysisShown] = useState(false);
+  const { markComplete } = useUserProgress();
+  const tracked = useRef(false);
+
+  useEffect(() => {
+    if (!tracked.current) {
+      tracked.current = true;
+      markComplete("module_view", "module-4");
+      markComplete("knowledge_point", "portfolio-construction", { module: 4 });
+    }
+  }, [markComplete]);
 
   const addPosition = () => {
     if (!selectedStock || !selectedRationale || !strategy) return;
@@ -255,7 +266,7 @@ const ModuleFour = () => {
                 <Link to="/module/3" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
                   <ArrowLeft className="h-4 w-4" /> Module 3
                 </Link>
-                <Link to="/module/5" className="group inline-flex items-center gap-2 rounded-xl bg-gradient-warm px-6 py-3 text-sm font-semibold text-primary-foreground">
+                <Link to="/module/5" onClick={() => markComplete("module_complete", "module-4")} className="group inline-flex items-center gap-2 rounded-xl bg-gradient-warm px-6 py-3 text-sm font-semibold text-primary-foreground">
                   Continue to Module 5 <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
                 </Link>
               </div>

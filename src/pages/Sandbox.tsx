@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FlaskConical, ChevronRight, ArrowLeft, Info } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -11,6 +11,7 @@ import PortfolioEvaluation from "@/components/sandbox/PortfolioEvaluation";
 import StrategyEducation from "@/components/sandbox/StrategyEducation";
 import CustomPortfolioBuilder from "@/components/sandbox/CustomPortfolioBuilder";
 import { useMarketPrices, useStrategyBacktest, type StrategyType } from "@/hooks/useStrategyBacktest";
+import { useUserProgress } from "@/hooks/useUserProgress";
 
 // ── Slider config per strategy ──────────────────────────────────────────────
 
@@ -78,6 +79,8 @@ const Sandbox = () => {
     momentum: 0.5,
     custom: 0,
   });
+  const { markComplete } = useUserProgress();
+  const trackedStrategy = useRef<string | null>(null);
 
   const { data: marketData, isLoading } = useMarketPrices();
 
@@ -97,6 +100,17 @@ const Sandbox = () => {
   );
 
   const sliderConfig = selectedStrategy ? sliderConfigs[selectedStrategy] : null;
+
+  // Track backtest runs
+  useEffect(() => {
+    if (selectedStrategy && selectedStrategy !== 'custom' && result && trackedStrategy.current !== selectedStrategy) {
+      trackedStrategy.current = selectedStrategy;
+      markComplete("sandbox_backtest", selectedStrategy, {
+        strategy: strategyDef?.name || selectedStrategy,
+        param: currentParam,
+      });
+    }
+  }, [selectedStrategy, result, markComplete, strategyDef, currentParam]);
 
   const handleParamChange = (value: number[]) => {
     if (!selectedStrategy) return;

@@ -1,7 +1,9 @@
+import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, TrendingUp, BarChart3, Zap, ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
+import { useUserProgress } from "@/hooks/useUserProgress";
 import ProgressBar from "@/components/ProgressBar";
 
 const approaches = [
@@ -35,6 +37,19 @@ const approaches = [
 ];
 
 const ModuleOne = () => {
+  const { markComplete } = useUserProgress();
+  const tracked = useRef(false);
+
+  useEffect(() => {
+    if (!tracked.current) {
+      tracked.current = true;
+      markComplete("module_view", "module-1");
+      markComplete("knowledge_point", "fundamental-thinking", { module: 1 });
+      markComplete("knowledge_point", "technical-thinking", { module: 1 });
+      markComplete("knowledge_point", "momentum-thinking", { module: 1 });
+    }
+  }, [markComplete]);
+
   return (
     <AppLayout>
       <div className="container max-w-4xl py-12 md:py-20">
@@ -135,12 +150,14 @@ const ModuleOne = () => {
             <ArrowLeft className="h-4 w-4" />
             Back to Path
           </Link>
-          <button
+          <Link
+            to="/module/2"
+            onClick={() => markComplete("module_complete", "module-1")}
             className="group inline-flex items-center gap-2 rounded-xl bg-gradient-warm px-6 py-3 text-sm font-semibold text-primary-foreground transition-all hover:shadow-lg hover:shadow-primary/20"
           >
-            Continue to Section 1
+            Continue to Module 2
             <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
-          </button>
+          </Link>
         </div>
       </div>
     </AppLayout>

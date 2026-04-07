@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -42,5 +42,19 @@ export const useUserProgress = () => {
 
   const hasActivity = (type: string) => progress.some((p) => p.activity_type === type);
 
-  return { progress, loading, markComplete, completedModules, hasActivity };
+  const getActivities = useCallback((type: string) => {
+    return progress.filter((p) => p.activity_type === type);
+  }, [progress]);
+
+  const activityCount = useCallback((type: string) => {
+    return progress.filter((p) => p.activity_type === type).length;
+  }, [progress]);
+
+  const recentActivities = useMemo(() => {
+    return [...progress]
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .slice(0, 20);
+  }, [progress]);
+
+  return { progress, loading, markComplete, completedModules, hasActivity, getActivities, activityCount, recentActivities };
 };

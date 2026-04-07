@@ -1,12 +1,23 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, ChevronRight, Award, Brain, Target, AlertTriangle, Unlock } from "lucide-react";
 import { Link } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
+import { useUserProgress } from "@/hooks/useUserProgress";
 
 const ModuleSix = () => {
   const [reflectionAnswer, setReflectionAnswer] = useState("");
   const [completed, setCompleted] = useState(false);
+  const { markComplete } = useUserProgress();
+  const tracked = useRef(false);
+
+  useEffect(() => {
+    if (!tracked.current) {
+      tracked.current = true;
+      markComplete("module_view", "module-6");
+      markComplete("knowledge_point", "behavioral-reflection", { module: 6 });
+    }
+  }, [markComplete]);
 
   return (
     <AppLayout>
@@ -106,7 +117,7 @@ const ModuleSix = () => {
             placeholder="Take a moment to reflect..."
           />
           <button
-            onClick={() => setCompleted(true)}
+            onClick={() => { setCompleted(true); markComplete("module_complete", "module-6"); }}
             disabled={!reflectionAnswer.trim()}
             className="rounded-xl bg-gradient-warm px-6 py-3 text-sm font-semibold text-primary-foreground disabled:opacity-40"
           >

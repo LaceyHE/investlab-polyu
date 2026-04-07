@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, ChevronRight, PieChart, Activity, TrendingDown, Layers } from "lucide-react";
 import { Link } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
+import { useUserProgress } from "@/hooks/useUserProgress";
 
 type EnvToggle = "trending" | "shock" | "neutral";
 
@@ -36,6 +37,16 @@ const envImpact: Record<EnvToggle, { volatility: string; drawdown: string; note:
 const ModuleFive = () => {
   const [env, setEnv] = useState<EnvToggle>("neutral");
   const [reflectionSubmitted, setReflectionSubmitted] = useState(false);
+  const { markComplete } = useUserProgress();
+  const tracked = useRef(false);
+
+  useEffect(() => {
+    if (!tracked.current) {
+      tracked.current = true;
+      markComplete("module_view", "module-5");
+      markComplete("knowledge_point", "risk-exposure", { module: 5 });
+    }
+  }, [markComplete]);
 
   const strategyMix = [
     { strategy: "Trend Following", pct: 42, color: "bg-primary" },
@@ -180,7 +191,7 @@ const ModuleFive = () => {
             className={`group inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold transition-all ${
               reflectionSubmitted ? "bg-gradient-warm text-primary-foreground" : "bg-secondary text-muted-foreground cursor-not-allowed"
             }`}
-            onClick={(e) => { if (!reflectionSubmitted) e.preventDefault(); }}
+            onClick={(e) => { if (!reflectionSubmitted) { e.preventDefault(); } else { markComplete("module_complete", "module-5"); } }}
           >
             Continue to Module 6 <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
           </Link>

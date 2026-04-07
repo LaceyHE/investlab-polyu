@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Compass, ArrowLeft, ChevronRight, Calendar, TrendingDown } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -17,6 +17,7 @@ import { useMarketData, type TimeAggregation } from "@/hooks/useMarketData";
 import { useScenarioSimulation } from "@/hooks/useScenarioSimulation";
 import { usePushMessages } from "@/hooks/usePushMessages";
 import { getStocksForScenario, getIndustriesForScenario } from "@/data/scenario-stocks";
+import { useUserProgress } from "@/hooks/useUserProgress";
 
 const ScenarioSimulator = () => {
   const [selectedScenario, setSelectedScenario] = useState<ScenarioPreset | null>(null);
@@ -24,6 +25,15 @@ const ScenarioSimulator = () => {
   const [showDrawdown, setShowDrawdown] = useState(false);
   const [showVolatility, setShowVolatility] = useState(false);
   const [showSharpe, setShowSharpe] = useState(false);
+  const { markComplete } = useUserProgress();
+  const trackedScenario = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (selectedScenario && trackedScenario.current !== selectedScenario.id) {
+      trackedScenario.current = selectedScenario.id;
+      markComplete("scenario_run", selectedScenario.id, { scenario: selectedScenario.name });
+    }
+  }, [selectedScenario, markComplete]);
 
   const scenarioStocks = useMemo(() => selectedScenario ? getStocksForScenario(selectedScenario.id) : [], [selectedScenario]);
   const scenarioIndustries = useMemo(() => selectedScenario ? getIndustriesForScenario(selectedScenario.id) : [], [selectedScenario]);
