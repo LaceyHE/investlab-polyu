@@ -214,17 +214,17 @@ const Account = () => {
 
           {/* Activity Timeline */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-            <Card>
+            <Card className="h-full flex flex-col">
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2">
                   <Clock className="h-4 w-4 text-primary" /> Recent Activity
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="flex-1 min-h-0">
                 {timelineEvents.length === 0 ? (
                   <p className="text-sm text-muted-foreground">Start exploring modules and sandbox to see your activity here.</p>
                 ) : (
-                  <ul className="space-y-3">
+                  <ul className="space-y-3 max-h-[280px] overflow-y-auto pr-1">
                     {timelineEvents.map((r, i) => (
                       <li key={i} className="flex items-start justify-between gap-3">
                         <p className="text-sm text-foreground">{formatActivityLabel(r)}</p>
