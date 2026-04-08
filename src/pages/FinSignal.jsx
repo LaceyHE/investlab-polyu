@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import {
@@ -434,7 +434,7 @@ export default function FinSignal() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [avKey, setAvKey] = useState(import.meta.env.VITE_ALPHAVANTAGE_KEY || '');
-  const [openaiKey, setOpenaiKey] = useState('');
+  // DeepSeek key from env
   const [selectedConcept, setSelectedConcept] = useState(null);
   const [view, setView] = useState('news');
   const [showSettings, setShowSettings] = useState(false);
@@ -476,23 +476,24 @@ export default function FinSignal() {
   /* ── LLM Analysis ── */
   const analyzeLLM = useCallback(async (index) => {
     if (llmResults[index]) { setExpandedArticle(expandedArticle === index ? null : index); return; }
-    if (!openaiKey.trim()) { setError('Please enter your OpenAI API key in Settings'); return; }
+    const dsKey = import.meta.env.VITE_DEEPSEEK_KEY;
+    if (!dsKey) { setError('Missing DeepSeek API key in .env.local'); return; }
     setLlmLoading(p => ({ ...p, [index]: true }));
     setExpandedArticle(index);
     try {
       const article = articles[index];
       const concepts = detectConcepts(article.title + ' ' + article.summary);
       const conceptList = concepts.map(c => c.name).join(', ');
-      const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      const res = await fetch('https://api.deepseek.com/chat/completions', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${openaiKey.trim()}` },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${dsKey}` },
         body: JSON.stringify({
-          model: 'gpt-4o-mini',
+          model: 'deepseek-chat',
           messages: [
-            { role: 'system', content: `You are a senior financial analyst and educator. Your audience is informed but non-specialist investors who want to understand what news means for their portfolio. Be specific, actionable, and educational. Reference the detected financial concepts: ${conceptList || 'none detected'}.\n\nRespond in exactly this format:\n\n**What Happened:** (2-3 sentences, plain English)\n\n**Why It Matters for Investors:** (3-4 sentences with specific implications)\n\n**Key Concepts at Play:** (explain each detected concept in context of this specific news)\n\n**Risk Factors:** (3 bullet points)\n\n**What to Watch Next:** (3 specific things to monitor)\n\n**Investor Action Items:** (2-3 concrete suggestions based on investor type)` },
-            { role: 'user', content: `Analyze this financial news for an investor audience:\n\nTitle: ${article.title}\n\nSummary: ${article.summary}\n\nSentiment: ${article.sentiment} (Score: ${article.sentimentScore})\nDetected Concepts: ${conceptList}` }
+            { role: 'system', content: `You are a concise financial analyst. Write exactly 3-5 sentences in plain text. Explain: what happened, why it matters financially, and one key risk or factor to watch. No markdown, no bold, no bullet points, no asterisks, no investment advice, no buy/sell/hold recommendations. Just plain factual sentences.` },
+            { role: 'user', content: `Summarize this financial news briefly:\nTitle: ${article.title}\nSummary: ${article.summary}\nSentiment: ${article.sentiment} (Score: ${article.sentimentScore})` }
           ],
-          max_tokens: 800,
+          max_tokens: 250,
           temperature: 0.3
         })
       });
@@ -503,7 +504,7 @@ export default function FinSignal() {
       setError('Failed to connect to OpenAI. Check your API key.');
     }
     setLlmLoading(p => ({ ...p, [index]: false }));
-  }, [articles, openaiKey, llmResults, expandedArticle]);
+  }, [articles, llmResults, expandedArticle]);
 
   /* ── Analytics Data ── */
   const analytics = useMemo(() => {
