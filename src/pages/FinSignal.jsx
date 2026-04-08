@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 
 import AppLayout from '@/components/AppLayout';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -476,32 +477,23 @@ export default function FinSignal() {
   /* ── LLM Analysis ── */
   const analyzeLLM = useCallback(async (index) => {
     if (llmResults[index]) { setExpandedArticle(expandedArticle === index ? null : index); return; }
-    const dsKey = import.meta.env.VITE_DEEPSEEK_KEY;
-    if (!dsKey) { setError('Missing DeepSeek API key in .env.local'); return; }
     setLlmLoading(p => ({ ...p, [index]: true }));
     setExpandedArticle(index);
     try {
       const article = articles[index];
-      const concepts = detectConcepts(article.title + ' ' + article.summary);
-      const conceptList = concepts.map(c => c.name).join(', ');
-      const res = await fetch('https://api.deepseek.com/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${dsKey}` },
-        body: JSON.stringify({
-          model: 'deepseek-chat',
-          messages: [
-            { role: 'system', content: `You are a concise financial analyst. Write exactly 3-5 sentences in plain text. Explain: what happened, why it matters financially, and one key risk or factor to watch. No markdown, no bold, no bullet points, no asterisks, no investment advice, no buy/sell/hold recommendations. Just plain factual sentences.` },
-            { role: 'user', content: `Summarize this financial news briefly:\nTitle: ${article.title}\nSummary: ${article.summary}\nSentiment: ${article.sentiment} (Score: ${article.sentimentScore})` }
-          ],
-          max_tokens: 250,
-          temperature: 0.3
-        })
+      const { data, error: fnError } = await supabase.functions.invoke('deepseek-proxy', {
+        body: {
+          title: article.title,
+          summary: article.summary,
+          sentiment: article.sentiment,
+          sentimentScore: article.sentimentScore,
+        },
       });
-      const data = await res.json();
-      if (data.error) { setError(`LLM Error: ${data.error.message}`); }
-      else { setLlmResults(p => ({ ...p, [index]: data.choices[0].message.content })); }
+      if (fnError) { setError(`Analysis error: ${fnError.message}`); }
+      else if (data?.error) { setError(`Analysis error: ${data.error}`); }
+      else { setLlmResults(p => ({ ...p, [index]: data.analysis })); }
     } catch (e) {
-      setError('Failed to connect to OpenAI. Check your API key.');
+      setError('Failed to analyze article. Please try again.');
     }
     setLlmLoading(p => ({ ...p, [index]: false }));
   }, [articles, llmResults, expandedArticle]);
