@@ -668,7 +668,7 @@ export default function FinSignal() {
                         {expandedArticle === i && llmResults[i] && (
                           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
                             <div className="mt-3 p-4 bg-purple-50 border border-purple-200 rounded-lg">
-                              <p className="text-xs font-medium text-purple-700 mb-2 flex items-center gap-1"><Brain className="w-3 h-3" /> AI Investor Analysis (GPT-4o-mini)</p>
+                              <p className="text-xs font-medium text-purple-700 mb-2 flex items-center gap-1"><Brain className="w-3 h-3" /> AI Analysis</p>
                               <div className="text-sm text-foreground leading-relaxed whitespace-pre-line">{llmResults[i]}</div>
                             </div>
                           </motion.div>
