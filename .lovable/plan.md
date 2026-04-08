@@ -1,60 +1,31 @@
 
 
-# Link Hub to Real Activity + Seed Lacey's Data
+# Create DeepSeek Proxy Edge Function + Update FinSignal
 
-## Two parts
+## Overview
+Move the DeepSeek API call from the client to a backend edge function, keeping the API key secure server-side.
 
-### Part A: Seed Lacey's progress records
+## Changes
 
-Insert realistic activity records for user `dc4d1350-3439-4e25-9cca-3582239ace6b` into `user_progress` using the insert tool:
+### 1. Add secret `DEEPSEEK_KEY`
+Set value: `sk-19d14f855f75479e9b8c9e6c61258641`
 
-- **3 module completions**: `module_complete` for modules 1, 2, 3
-- **2 scenario runs**: `scenario_run` for `dotcom` and `covid`
-- **2 sandbox backtests**: `sandbox_backtest` for `allocation` (60/40) and `momentum` (Speed Racer)
-- **1 custom portfolio**: `sandbox_custom` with sample assets/weights
-- **3 knowledge points**: `knowledge_point` for concepts like `fundamental-thinking`, `technical-thinking`, `momentum-thinking`
+### 2. Create edge function `supabase/functions/deepseek-proxy/index.ts`
+- Accept POST with `{ title, summary, sentiment, sentimentScore }`
+- Read `DEEPSEEK_KEY` from `Deno.env`
+- Call DeepSeek API with the specified system/user prompts, max_tokens 250, temperature 0.3
+- Return `{ analysis: string }`
+- Include CORS headers on all responses including errors
 
-Timestamps spread over the past 2 weeks so the timeline looks natural.
+### 3. Update `src/pages/FinSignal.jsx` (lines 477-507)
+- Import supabase client
+- Replace direct `fetch('https://api.deepseek.com/...')` with `supabase.functions.invoke('deepseek-proxy', { body: { title, summary, sentiment, sentimentScore } })`
+- Remove the `VITE_DEEPSEEK_KEY` check
+- Parse `data.analysis` from the response
 
-### Part B: Wire tracking calls across the app
-
-**Files to modify:**
-
-1. **`src/pages/ModuleOne.tsx` through `ModuleSix.tsx`** (6 files)
-   - Import `useUserProgress`
-   - Call `markComplete("module_view", "module-N")` on mount
-   - Call `markComplete("module_complete", "module-N")` when user clicks "Continue to next module"
-   - Track knowledge points from educational content sections
-
-2. **`src/pages/Sandbox.tsx`**
-   - When backtest results render, call `markComplete("sandbox_backtest", strategyId, { strategy })`
-   - For custom portfolio, call `markComplete("sandbox_custom", "custom-portfolio", { assets })`
-
-3. **`src/pages/ScenarioSimulator.tsx`**
-   - When user selects a scenario, call `markComplete("scenario_run", scenarioId)`
-
-4. **`src/hooks/useUserProgress.ts`**
-   - Add `getActivities(type)` helper returning filtered records with metadata
-   - Add `activityCount(type)` helper
-
-5. **`src/pages/Account.tsx`** — Rebuild Hub cards with real data:
-   - **Learning Progress**: Show visited vs completed with dates
-   - **Activity Timeline**: Replace static AI Commentary with chronological feed of recent actions ("Ran 60/40 backtest", "Explored Dot-Com scenario")
-   - **Sandbox/Scenario stats**: Show counts and which strategies/scenarios were tried
-   - **Radar chart**: Scores driven by actual activity counts
-   - **Badges**: Add "Portfolio Architect" (custom portfolio), "History Student" (all scenarios), keep existing ones now earnable
-   - **Knowledge Points**: Show concept tags from `knowledge_point` records
-
-### Summary of changes
-
-| Action | File(s) |
-|--------|---------|
-| Insert | ~10 rows into `user_progress` for Lacey |
-| Modify | `ModuleOne.tsx` – `ModuleSix.tsx` (add tracking) |
-| Modify | `Sandbox.tsx` (track backtests) |
-| Modify | `ScenarioSimulator.tsx` (track scenario runs) |
-| Modify | `useUserProgress.ts` (add helpers) |
-| Modify | `Account.tsx` (rebuild with real data) |
-
-No database schema changes needed — the existing `user_progress` table already supports all activity types.
+| Action | File |
+|--------|------|
+| Create | `supabase/functions/deepseek-proxy/index.ts` |
+| Modify | `src/pages/FinSignal.jsx` — replace direct API call with edge function invoke |
+| Secret | Add `DEEPSEEK_KEY` |
 
