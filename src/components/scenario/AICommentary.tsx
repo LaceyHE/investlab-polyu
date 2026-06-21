@@ -125,6 +125,10 @@ const AICommentary = ({
       const response = await supabase.functions.invoke('scenario-commentary', {
         body: {
           scenario: scenario.name,
+          scenarioType: scenario.isFuture ? 'hypothetical' : 'historical',
+          quantContext: scenario.isFuture && scenario.quantMethodology
+            ? `${scenario.quantMethodology.driverLabel}. Formula: ${scenario.quantMethodology.formula}`
+            : undefined,
           currentDate,
           positions: positionsDesc,
           metrics: {

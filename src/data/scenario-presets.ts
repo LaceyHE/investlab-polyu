@@ -2,7 +2,17 @@ export interface ScenarioEvent {
   date: string; // YYYY-MM-DD
   label: string;
   description: string;
-  type: 'crash' | 'fed' | 'earnings' | 'policy' | 'recovery';
+  type: 'crash' | 'fed' | 'earnings' | 'policy' | 'recovery' | 'geopolitical';
+}
+
+export interface QuantMethodology {
+  concept: 'mean-reversion' | 'volatility-shock' | 'valuation-correction';
+  driverLabel: string;
+  formula: string;
+  keyInputs: Array<{ label: string; value: string; source: string }>;
+  drawdownStartMonth: number;
+  drawdownDurationMonths: number;
+  annualizedVol: number;
 }
 
 export interface ScenarioPreset {
@@ -22,6 +32,8 @@ export interface ScenarioPreset {
     keyTakeaways: string[];
     reflectionQuestion: string;
   };
+  isFuture?: boolean;
+  quantMethodology?: QuantMethodology;
 }
 
 export const scenarioPresets: ScenarioPreset[] = [
@@ -153,6 +165,143 @@ export const scenarioPresets: ScenarioPreset[] = [
         'Concentration risk in "winners" creates hidden fragility.',
       ],
       reflectionQuestion: 'How would you recognize a regime shift in real time, when all recent data supports the old regime?',
+    },
+  },
+
+  // ── Hypothetical future downside scenarios ──────────────────────────────────
+
+  {
+    id: 'mean-reversion',
+    name: 'Mean Reversion',
+    subtitle: 'What happens when prices overshoot their long-run average?',
+    description: 'Prices that rise 2–3× above their 3-year moving average have historically reverted. This scenario models a Nasdaq drawdown of –45% driven entirely by mean reversion math, with no catalyst other than valuation gravity.',
+    startDate: '2025-01-01',
+    endDate: '2027-06-30',
+    peakDrawdown: '–45%',
+    indexTicker: '^IXIC',
+    tickers: ['NVDA', 'META', 'AMZN', 'GOOGL', 'MSFT', 'AMD', 'TSLA', 'NFLX', 'SNOW', 'PLTR', 'KO', 'JNJ', 'PG', 'WMT', 'XOM'],
+    events: [
+      { date: '2025-04-01', label: 'Price-to-Mean Ratio Hits 3×', description: 'Nasdaq trades at 3× its 3-year moving average. Historically rare — prior instances: 1929, 2000, 2021. Each ended with a reversion of 40–80%.', type: 'earnings' },
+      { date: '2025-06-01', label: 'First Reversion Signal', description: '50-day moving average crosses below 200-day MA (death cross). Systematic trend-following funds begin selling.', type: 'crash' },
+      { date: '2025-09-01', label: 'Price Returns to 2-Year Mean', description: 'Nasdaq down –25% from peak. Price reaches its 2-year average. Long-term investors begin tentative buying.', type: 'crash' },
+      { date: '2026-01-01', label: 'Overshoot Below Mean', description: 'Classic reversion overshoot — price dips below the 3-year average before stabilizing. Fear drives over-correction.', type: 'crash' },
+      { date: '2026-04-01', label: '3-Year Mean Begins Declining', description: 'As recent high prices roll off the 3-year window, the mean itself falls — providing no floor. Double compression.', type: 'policy' },
+      { date: '2026-07-01', label: 'Stabilization at New Mean', description: 'Price and 3-year average converge at –45% from the 2025 peak. Mean reversion is mathematically complete.', type: 'recovery' },
+    ],
+    learningOutcomes: {
+      whatHappened: 'Mean reversion is one of the most robust phenomena in financial markets. When an asset trades far above its long-run average, the expected future return is negative — not because of any specific event, but because price and value must eventually converge. This scenario shows what happens when that reversion is the only story.',
+      portfolioBehavior: 'Stocks trading 2–3× above their 3-year mean fell hardest. Defensive stocks near or below their mean provided relative protection. The lesson: a stock\'s current price is not its fair value — the gap between price and mean is a hidden risk.',
+      keyTakeaways: [
+        'Mean reversion is not a prediction of timing — it is a statement about long-run probability.',
+        'The further a price is above its mean, the more energy is "stored" for the reversion.',
+        'Even during reversion, defensive stocks near their historical averages preserve capital.',
+        'The 3-year mean itself can decline as recent highs age out — extending the bear market.',
+      ],
+      reflectionQuestion: 'If you knew the Nasdaq was trading 3× above its 3-year average, what would that change about your portfolio allocation?',
+    },
+    isFuture: true,
+    quantMethodology: {
+      concept: 'mean-reversion',
+      driverLabel: '3-Year Moving Average Reversion',
+      formula: 'Drawdown = 1 − (3yr Mean / Current Price)\nExample: Price = 3× Mean → Drawdown = 1 − (1/3) = −67%\nWith earnings growth offset: implied drawdown ≈ −45%',
+      keyInputs: [
+        { label: 'Current Price / 3yr Mean', value: '3.0×', source: 'Nasdaq composite, Jan 2025' },
+        { label: 'Historical reversion depth', value: '−45% to −78%', source: 'Dot-com (2000), 2021 speculative names' },
+        { label: 'Annualized volatility (crash regime)', value: '39% (28% × 1.4)', source: 'Nasdaq 2022 realized vol' },
+      ],
+      drawdownStartMonth: 3,
+      drawdownDurationMonths: 12,
+      annualizedVol: 0.28,
+    },
+  },
+
+  {
+    id: 'volatility-shock',
+    name: 'Historical Volatility Shock',
+    subtitle: 'When realized volatility spikes, markets enter regime-shift drawdowns',
+    description: 'Realized volatility (measured over the prior 252 trading days) is the market\'s risk speedometer. When it spikes from 15% to 48%, systematic funds must de-lever. This scenario shows how vol itself becomes the crash mechanism — without any fundamental catalyst.',
+    startDate: '2025-01-01',
+    endDate: '2026-12-31',
+    peakDrawdown: '–38%',
+    indexTicker: '^GSPC',
+    tickers: ['TSLA', 'RIVN', 'UPST', 'SQ', 'ABNB', 'COIN', 'MSTR', 'ROKU', 'JPM', 'BAC', 'GS', 'GLD', 'XOM', 'WMT', 'VZ'],
+    events: [
+      { date: '2025-03-01', label: 'Vol Regime Shift', description: 'Realized 30-day vol spikes from 15% to 45%. Risk-parity funds using vol-targeting algorithms are forced to sell equities to keep portfolio vol constant.', type: 'crash' },
+      { date: '2025-04-01', label: 'Vol-Targeting Funds De-lever', description: 'Systematic strategies (risk parity, vol-target, CTAs) mechanically reduce equity exposure as vol rises. Estimated $2T+ of AUM is managed this way.', type: 'crash' },
+      { date: '2025-06-01', label: 'Correlation Spike', description: 'Cross-asset correlations move toward 1.0. Stocks, bonds, and commodities fall together. Diversification fails in the short run — exactly when you need it most.', type: 'crash' },
+      { date: '2025-08-01', label: 'Vol Feedback Loop', description: 'Selling causes higher volatility. Higher volatility forces more selling. The feedback loop amplifies the initial shock by 2–3×. S&P down –25% from peak.', type: 'crash' },
+      { date: '2025-11-01', label: 'Vol Begins Normalizing', description: 'Realized vol drops from 48% to 30% as forced sellers exhaust their selling programs. Buyers cautiously return.', type: 'recovery' },
+      { date: '2026-03-01', label: 'New Volatility Regime', description: 'Vol settles at 22–25% (elevated but stable). A new regime: higher baseline risk, lower multiples. Recovery begins but markets do not return to prior highs quickly.', type: 'recovery' },
+    ],
+    learningOutcomes: {
+      whatHappened: 'Modern markets are dominated by systematic, rules-based strategies that react to volatility itself — not to fundamentals. When vol spikes, trillions of dollars are automatically sold. This creates a feedback loop where the vol shock IS the crash mechanism. No earnings miss, no recession, no geopolitical event needed.',
+      portfolioBehavior: 'High-vol stocks (TSLA, COIN, RIVN) fell 2–3× more than the index. Gold and defensive staples provided ballast. Financial stocks (JPM, GS) sold off as they are often the vol-sellers who must unwind..',
+      keyTakeaways: [
+        'Realized volatility is both a measure of risk and a cause of it — via systematic selling.',
+        'Expected maximum drawdown scales with volatility: σ × √T × Z (where Z≈2.5 for 99th pct).',
+        'Correlation spikes in a vol shock make traditional diversification temporarily ineffective.',
+        'The fastest recoveries come when vol normalizes — not when fundamentals improve.',
+      ],
+      reflectionQuestion: 'If your portfolio\'s volatility doubled in one month, would your risk management rules force you to sell at the worst moment?',
+    },
+    isFuture: true,
+    quantMethodology: {
+      concept: 'volatility-shock',
+      driverLabel: 'Realized Volatility Regime Shift (15% → 48%)',
+      formula: 'Expected Max Drawdown ≈ σ × √T × Z\nσ = 0.48 (peak realized vol), T = 0.5yr, Z = 2.5 (99th pct)\n→ 0.48 × √0.5 × 2.5 ≈ −85% theoretical max\nWith mean-reversion dampening: realized ≈ −38%',
+      keyInputs: [
+        { label: 'Baseline realized vol (calm regime)', value: '15%', source: 'S&P 500, 2024 realized vol' },
+        { label: 'Peak realized vol (shock)', value: '48%', source: 'COVID March 2020: 58%; GFC: 52%' },
+        { label: 'Vol-targeted AUM (estimated)', value: '$2T+', source: 'Risk parity + vol-target strategies, 2024' },
+      ],
+      drawdownStartMonth: 2,
+      drawdownDurationMonths: 10,
+      annualizedVol: 0.15,
+    },
+  },
+
+  {
+    id: 'valuation-correction',
+    name: 'Valuation Correction',
+    subtitle: 'What Shiller CAPE predicts about long-run expected returns',
+    description: 'The Shiller CAPE ratio (Cyclically Adjusted P/E, using 10-year average earnings) has a 130-year track record of predicting long-run returns. At CAPE 35, the historical implied 10-year real return is near zero. This scenario shows what happens when CAPE reverts toward its long-run mean of 17.',
+    startDate: '2025-01-01',
+    endDate: '2027-12-31',
+    peakDrawdown: '–40%',
+    indexTicker: '^GSPC',
+    tickers: ['NVDA', 'MSFT', 'AAPL', 'META', 'GOOGL', 'AMZN', 'LLY', 'V', 'MA', 'COST', 'XOM', 'CVX', 'JPM', 'BRK-B', 'VZ'],
+    events: [
+      { date: '2025-07-01', label: 'Earnings Growth Slows', description: 'Revenue growth decelerates for the Magnificent 7. High-multiple stocks require perfect execution — any miss triggers outsized selloffs. P/E compression begins at 28×.', type: 'earnings' },
+      { date: '2025-10-01', label: 'CAPE Warning Cited', description: 'Multiple research papers and Fed economists reference elevated Shiller CAPE. Media coverage increases. Institutional investors begin reducing forward P/E targets.', type: 'policy' },
+      { date: '2026-01-01', label: 'Multiple Compression Accelerates', description: 'P/E moves from 28× to 22× as risk-free rates remain elevated. Growth stocks require higher discount rates, compressing fair value mechanically.', type: 'crash' },
+      { date: '2026-04-01', label: 'S&P Down –20%', description: 'Value investors outperform growth for the first time in years. Energy, financials, and consumer staples hold up. Rotation accelerates the growth selloff.', type: 'crash' },
+      { date: '2026-07-01', label: 'Trough Valuation Zone', description: 'CAPE approaches 20×. Forward P/E ~16×. S&P down –40% from peak. Historically, returns from these levels over the next decade have been above average.', type: 'crash' },
+      { date: '2027-01-01', label: 'CAPE Settles at Fair Value', description: 'CAPE at ~20×, near its post-1990 average. Investors who held through the correction are still down –25–30%, but forward expected returns have normalized.', type: 'recovery' },
+    ],
+    learningOutcomes: {
+      whatHappened: 'Valuation is not a timing tool — but it is a return predictor. At CAPE 35 (Jan 2025), the historical regression implies near-zero real 10-year returns. This scenario shows the mechanism: as earnings grow modestly but P/E contracts from 35× to 17×, the price must fall roughly 50% just to reach fair value. Earnings growth offsets some of this, resulting in a –40% drawdown.',
+      portfolioBehavior: 'High-CAPE stocks (NVDA, MSFT, LLY, COST) fell most as their premium multiples compressed. Low-P/E value stocks (XOM, CVX, BRK-B, VZ) held up and outperformed. The portfolio lesson: mixing "expensive" and "cheap" stocks provides a natural hedge against valuation compression.',
+      keyTakeaways: [
+        'CAPE is a 10-year return predictor, not a 1-year market timer — but the correction eventually comes.',
+        'Fair Value = EPS × Target P/E. When P/E compresses, price falls even if earnings grow.',
+        'Value stocks outperform during valuation corrections because their P/E has less room to compress.',
+        'The best time to buy historically has been when CAPE is below 15× — the inverse of this scenario.',
+      ],
+      reflectionQuestion: 'If you knew the S&P 500\'s CAPE was 35× (twice its historical mean), would that change how much you allocated to equities vs. alternatives?',
+    },
+    isFuture: true,
+    quantMethodology: {
+      concept: 'valuation-correction',
+      driverLabel: 'Shiller CAPE Mean Reversion (35× → 17×)',
+      formula: 'Fair Value = EPS × Target P/E\nΔPrice/Price = (Target CAPE / Current CAPE) − 1\n= (17 / 35) − 1 = −51%\nWith ~18% earnings growth offset over 3 years: net ≈ −40%',
+      keyInputs: [
+        { label: 'Shiller CAPE (Jan 2025)', value: '~35×', source: 'Yale/Shiller CAPE data, Jan 2025' },
+        { label: 'Long-run CAPE mean (since 1881)', value: '~17×', source: 'Shiller, "Irrational Exuberance" (2000/2015)' },
+        { label: 'Implied 10yr real return at CAPE 35', value: '~0.5%/yr', source: 'Shiller CAPE regression, R²≈0.4' },
+      ],
+      drawdownStartMonth: 6,
+      drawdownDurationMonths: 15,
+      annualizedVol: 0.22,
     },
   },
 ];

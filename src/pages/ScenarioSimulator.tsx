@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Compass, ArrowLeft, ChevronRight, Calendar, TrendingDown } from "lucide-react";
+import { Compass, ArrowLeft, ChevronRight, Calendar, TrendingDown, FlaskConical } from "lucide-react";
 import { Link } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import ScenarioCard from "@/components/scenario/ScenarioCard";
@@ -12,8 +12,10 @@ import AICommentary from "@/components/scenario/AICommentary";
 import LearningOutcomes from "@/components/scenario/LearningOutcomes";
 import PersonalizedOutcomes from "@/components/scenario/PersonalizedOutcomes";
 import PushMessages from "@/components/scenario/PushMessages";
+import MethodologyPanel from "@/components/scenario/MethodologyPanel";
 import { scenarioPresets, type ScenarioPreset } from "@/data/scenario-presets";
 import { useMarketData, type TimeAggregation } from "@/hooks/useMarketData";
+import { useSyntheticMarketData } from "@/hooks/useSyntheticMarketData";
 import { useScenarioSimulation } from "@/hooks/useScenarioSimulation";
 import { usePushMessages } from "@/hooks/usePushMessages";
 import { getStocksForScenario, getIndustriesForScenario } from "@/data/scenario-stocks";
@@ -43,9 +45,21 @@ const ScenarioSimulator = () => {
     return [selectedScenario.indexTicker, ...scenarioStocks.map(s => s.ticker)];
   }, [selectedScenario, scenarioStocks]);
 
-  const { data: marketData, isLoading: isLoadingData } = useMarketData(
-    allTickers, selectedScenario?.startDate || '', selectedScenario?.endDate || '',
+  const isFutureScenario = selectedScenario?.isFuture ?? false;
+
+  const { data: realMarketData, isLoading: isLoadingReal } = useMarketData(
+    isFutureScenario ? [] : allTickers,
+    selectedScenario?.startDate || '',
+    selectedScenario?.endDate || '',
   );
+
+  const { data: syntheticMarketData } = useSyntheticMarketData(
+    selectedScenario,
+    isFutureScenario ? allTickers : [],
+  );
+
+  const marketData = isFutureScenario ? syntheticMarketData : realMarketData;
+  const isLoadingData = isFutureScenario ? false : isLoadingReal;
 
   const allDates = useMemo(() => {
     if (!marketData || !selectedScenario) return [];
@@ -114,10 +128,25 @@ const ScenarioSimulator = () => {
                 <h1 className="font-serif text-3xl text-foreground">Scenario Simulator</h1>
               </div>
               <p className="text-muted-foreground max-w-2xl mb-10">
-                Explore historical market scenarios with real data. Build portfolios, scrub through time, and understand how different environments shape investment outcomes.
+                Explore historical market crises with real data — or run hypothetical downside scenarios grounded in quantitative finance. Build portfolios, scrub through time, and understand how different environments shape investment outcomes.
               </p>
-              <div className="grid gap-4 sm:grid-cols-2">
-                {scenarioPresets.map((scenario, i) => (
+
+              {/* Historical scenarios */}
+              <h2 className="font-serif text-lg text-foreground mb-3">Historical Scenarios</h2>
+              <div className="grid gap-4 sm:grid-cols-2 mb-10">
+                {scenarioPresets.filter(s => !s.isFuture).map((scenario, i) => (
+                  <ScenarioCard key={scenario.id} scenario={scenario} index={i} onSelect={() => setSelectedScenario(scenario)} />
+                ))}
+              </div>
+
+              {/* Hypothetical scenarios */}
+              <div className="flex items-center gap-2 mb-3">
+                <FlaskConical className="h-4 w-4 text-warm" />
+                <h2 className="font-serif text-lg text-foreground">Hypothetical Scenarios</h2>
+                <span className="text-xs text-muted-foreground">— Quantitatively modelled, synthetic price data</span>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {scenarioPresets.filter(s => s.isFuture).map((scenario, i) => (
                   <ScenarioCard key={scenario.id} scenario={scenario} index={i} onSelect={() => setSelectedScenario(scenario)} />
                 ))}
               </div>
@@ -223,6 +252,11 @@ const ScenarioSimulator = () => {
                       />
                     </div>
                   </div>
+
+                  {/* Methodology panel — hypothetical scenarios only */}
+                  {selectedScenario.isFuture && selectedScenario.quantMethodology && (
+                    <MethodologyPanel methodology={selectedScenario.quantMethodology} />
+                  )}
 
                   {/* AI Commentary */}
                   <AICommentary
