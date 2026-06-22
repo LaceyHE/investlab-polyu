@@ -1,4 +1,5 @@
 import AppNav from "@/components/AppNav";
+import ChatBot from "@/components/ChatBot";
 import type { ReactNode } from "react";
 
 interface AppLayoutProps {
@@ -10,6 +11,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
     <div className="min-h-screen bg-background">
       <AppNav />
       <main className="pt-16">{children}</main>
+      <ChatBot />
     </div>
   );
 };
