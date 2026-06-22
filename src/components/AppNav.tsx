@@ -1,13 +1,13 @@
 import { Link, useLocation } from "react-router-dom";
-import { BookOpen, Route, FlaskConical, Compass, User, LogOut, TrendingUp } from "lucide-react";
+import { BookOpen, Route, FlaskConical, Compass, User, LogOut, TrendingUp, Network } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-
 const navItems = [
   { to: "/", icon: BookOpen, label: "Home" },
   { to: "/finsignal", icon: TrendingUp, label: "Market Literacy" },
   { to: "/learning-path", icon: Route, label: "Learning Path" },
   { to: "/sandbox", icon: FlaskConical, label: "Sandbox" },
   { to: "/scenarios", icon: Compass, label: "Scenarios" },
+  { to: "/causal-lab", icon: Network, label: "Causal Lab" },
   { to: "/account", icon: User, label: "Hub" },
 ];
 

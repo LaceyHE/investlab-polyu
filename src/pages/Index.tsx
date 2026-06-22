@@ -1,8 +1,7 @@
 import { motion } from "framer-motion";
-import { ArrowRight, Route, FlaskConical, Compass, User, TrendingUp } from "lucide-react";
+import { ArrowRight, Route, FlaskConical, Compass, User, TrendingUp, Network } from "lucide-react";
 import { Link } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
-
 const hubCards = [
   {
     to: "/finsignal",
@@ -32,6 +31,16 @@ const hubCards = [
     desc: "Simulate market crises—dot-com busts, flash crashes—and stress-test your portfolio decisions.",
     cta: "Run Scenarios",
   },
+  {
+    to: "/causal-lab",
+    icon: <Network className="h-6 w-6" />,
+    title: "CausalLab",
+    desc: "Explore cause-and-effect chains in markets—trace how rate hikes, oil shocks, and earnings surprises propagate.",
+    cta: "Open Lab",
+  },
+
+
+
   {
     to: "/account",
     icon: <User className="h-6 w-6" />,
