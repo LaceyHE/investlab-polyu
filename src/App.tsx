@@ -19,6 +19,8 @@ import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import FinSignal from "./pages/FinSignal";
 import FinancialStatements from "./pages/FinancialStatements";
+import CausalLab from "./pages/CausalLab";
+import CaseDetail from "./pages/CaseDetail";
 
 const queryClient = new QueryClient();
 
@@ -45,6 +47,10 @@ const App = () => (
             <Route path="/stress-tests" element={<Navigate to="/scenarios" replace />} />
             <Route path="/finsignal" element={<FinSignal />} />
             <Route path="/financial-statements" element={<FinancialStatements />} />
+            <Route path="/causal-lab" element={<CausalLab />} />
+            <Route path="/causal-lab/case/:caseId" element={<CaseDetail />} />
+
+
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

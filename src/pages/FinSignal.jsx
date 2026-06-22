@@ -21,7 +21,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 
-/* 🔸 NEW — import the Financial Statements page */
+/* 🔸 Financial Statements page */
 import FinancialStatements from '@/pages/FinancialStatements';
 
 /* ───────────── Financial Concepts Dictionary (35+) ───────────── */
@@ -435,10 +435,8 @@ export default function FinSignal() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [avKey, setAvKey] = useState(import.meta.env.VITE_ALPHAVANTAGE_KEY || '');
-  // DeepSeek key from env
   const [selectedConcept, setSelectedConcept] = useState(null);
   const [view, setView] = useState('news');
-  const [showSettings, setShowSettings] = useState(false);
   const [llmResults, setLlmResults] = useState({});
   const [llmLoading, setLlmLoading] = useState({});
   const [expandedArticle, setExpandedArticle] = useState(null);
@@ -526,311 +524,327 @@ export default function FinSignal() {
 
   /* ── UI ── */
   return (
-    <AppLayout><div className="bg-background text-foreground">
-      {/* Header */}
-      <header className="border-b border-border bg-card/80 backdrop-blur sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-              <Zap className="w-5 h-5 text-white" />
+    <AppLayout>
+      <div className="bg-background text-foreground">
+        {/* ════════ HERO — Search & Fetch ════════ */}
+        <section className="border-b border-border bg-gradient-to-b from-background to-card/30">
+          <div className="max-w-4xl mx-auto px-4 py-12 md:py-16">
+            {/* DEMO/LIVE 状态 */}
+            <div className="flex justify-center mb-5">
+              <Badge variant="outline" className={isLive ? 'border-emerald-300 bg-emerald-50 text-emerald-700' : 'border-amber-300 bg-amber-50 text-amber-700'}>
+                {isLive ? '● LIVE DATA' : '● DEMO MODE'}
+              </Badge>
             </div>
-            <div>
-              <h1 className="text-lg font-bold tracking-tight text-foreground">FinSignal</h1>
-              <p className="text-xs text-muted-foreground">AI-Powered Financial News Intelligence</p>
+
+            {/* 大标题 */}
+            <div className="text-center mb-8">
+              <h1 className="font-serif text-3xl md:text-4xl lg:text-5xl mb-3 text-foreground leading-tight">
+                What's moving the markets today?
+              </h1>
+              <p className="text-muted-foreground text-base md:text-lg max-w-2xl mx-auto">
+                Enter a topic to fetch real-time news with AI sentiment analysis.
+              </p>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className={isLive ? 'border-emerald-300 bg-emerald-50 text-emerald-700' : 'border-amber-300 bg-amber-50 text-amber-700'}>
-              {isLive ? '● LIVE' : '● DEMO'}
-            </Badge>
-            <Button variant="ghost" size="icon" onClick={() => setShowSettings(!showSettings)} className="hidden">
-              <Settings className="w-5 h-5 text-muted-foreground" />
-            </Button>
-          </div>
-        </div>
-      </header>
 
-      {/* Search & Fetch Bar */}
-      <div className="border-b border-border bg-card">
-        <div className="max-w-7xl mx-auto px-4 py-3">
-          <div className="flex gap-2 items-center">
-            <Input value={searchTopic} onChange={e => setSearchTopic(e.target.value)} placeholder="Filter by topic (e.g. technology, finance, earnings)" className="flex-1" />
-            <Button onClick={fetchNews} disabled={loading}>
-              <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-              {loading ? 'Fetching...' : 'Fetch News'}
-            </Button>
-          </div>
-          {error && (
-            <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mt-2">
-              <AlertTriangle className="w-4 h-4 flex-shrink-0" /> {error}
+            {/* 搜索框 + Fetch 按钮 */}
+            <div className="flex gap-3 max-w-3xl mx-auto">
+              <Input
+                value={searchTopic}
+                onChange={e => setSearchTopic(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') fetchNews(); }}
+                placeholder="Try: technology, oil, Fed rates, earnings..."
+                className="flex-1 h-14 text-base px-5"
+              />
+              <Button onClick={fetchNews} disabled={loading} className="h-14 px-8 text-base">
+                <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                {loading ? 'Fetching...' : 'Fetch News'}
+              </Button>
             </div>
-          )}
-        </div>
-      </div>
 
-      {/* Tabs + Main Content */}
-      <div className="max-w-7xl mx-auto px-4 pt-4 pb-6">
-        <Tabs value={view} onValueChange={setView}>
-          <TabsList>
-            <TabsTrigger value="news" className="flex items-center gap-2">
-              <Globe className="w-4 h-4" /> News Feed
-            </TabsTrigger>
-            <TabsTrigger value="analytics" className="flex items-center gap-2">
-              <BarChart2 className="w-4 h-4" /> Analytics
-            </TabsTrigger>
-            <TabsTrigger value="concepts" className="flex items-center gap-2">
-              <BookOpen className="w-4 h-4" /> Concept Library
-            </TabsTrigger>
-            {/* 🔸 NEW — Financial Statements tab trigger */}
-            <TabsTrigger value="statements" className="flex items-center gap-2">
-              <TrendingUp className="w-4 h-4" /> Financial Statements
-            </TabsTrigger>
-          </TabsList>
+            {/* 快捷标签 */}
+            <div className="flex flex-wrap gap-2 justify-center mt-4 max-w-3xl mx-auto">
+              {['Technology', 'Energy', 'Finance', 'Earnings', 'Economy', 'Crypto'].map((t) => (
+                <button
+                  key={t}
+                  onClick={() => { setSearchTopic(t.toLowerCase()); }}
+                  className="px-3 py-1.5 text-sm rounded-full border border-border hover:bg-muted hover:border-foreground/30 transition text-muted-foreground hover:text-foreground"
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
 
-          {/* ════════ NEWS VIEW ════════ */}
-          <TabsContent value="news" className="mt-6 space-y-4">
-            {!isLive && (
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800 flex items-start gap-3">
-                <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5 text-amber-500" />
-                <div>
-                  <p className="font-medium">Demo Mode — Showing sample data</p>
-                  <p className="text-amber-600 mt-1">Click "Fetch News" to load real-time news. <strong className="text-amber-800">Highlighted words</strong> in articles are financial concepts — click them to learn what they mean!</p>
-                </div>
+            {/* 错误提示 */}
+            {error && (
+              <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mt-4 max-w-3xl mx-auto">
+                <AlertTriangle className="w-4 h-4 flex-shrink-0" /> {error}
               </div>
             )}
+          </div>
+        </section>
 
-            {articles.map((article, i) => {
-              const concepts = detectConcepts(article.title + ' ' + article.summary);
-              return (
-                <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-                  <Card>
-                    <CardContent className="p-5">
-                      {/* Source + Date + Sentiment */}
-                      <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                          <span className="flex items-center gap-1"><Globe className="w-3 h-3" /> {article.source}</span>
-                          <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {new Date(article.date).toLocaleDateString()}</span>
-                        </div>
-                        <div className={`flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full border ${getSentimentBg(article.sentiment)} ${getSentimentColor(article.sentiment)}`}>
-                          <SentimentIcon label={article.sentiment} /> {article.sentiment} ({article.sentimentScore > 0 ? '+' : ''}{article.sentimentScore.toFixed(2)})
-                        </div>
-                      </div>
+        {/* ════════ Tabs + Main Content ════════ */}
+        <div className="max-w-7xl mx-auto px-4 pt-6 pb-6">
+          <Tabs value={view} onValueChange={setView}>
+            <TabsList>
+              <TabsTrigger value="news" className="flex items-center gap-2">
+                <Globe className="w-4 h-4" /> News Feed
+              </TabsTrigger>
+              <TabsTrigger value="analytics" className="flex items-center gap-2">
+                <BarChart2 className="w-4 h-4" /> Analytics
+              </TabsTrigger>
+              <TabsTrigger value="concepts" className="flex items-center gap-2">
+                <BookOpen className="w-4 h-4" /> Concept Library
+              </TabsTrigger>
+              <TabsTrigger value="statements" className="flex items-center gap-2">
+                <TrendingUp className="w-4 h-4" /> Financial Statements
+              </TabsTrigger>
+            </TabsList>
 
-                      {/* Title with highlights */}
-                      <h3 className="text-base font-semibold mb-2 leading-snug text-foreground">
-                        {article.url !== '#' ? (
-                          <a href={article.url} target="_blank" rel="noreferrer" className="hover:text-blue-600 transition">
-                            {highlightConcepts(article.title, setSelectedConcept)}
-                          </a>
-                        ) : highlightConcepts(article.title, setSelectedConcept)}
-                      </h3>
+            {/* ════════ NEWS VIEW ════════ */}
+            <TabsContent value="news" className="mt-6 space-y-4">
+              {!isLive && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800 flex items-start gap-3">
+                  <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5 text-amber-500" />
+                  <div>
+                    <p className="font-medium">Demo Mode — Showing sample data</p>
+                    <p className="text-amber-600 mt-1">Click "Fetch News" above to load real-time news. <strong className="text-amber-800">Highlighted words</strong> in articles are financial concepts — click them to learn what they mean!</p>
+                  </div>
+                </div>
+              )}
 
-                      {/* Summary with highlights */}
-                      <p className="text-sm text-muted-foreground leading-relaxed mb-3">
-                        {highlightConcepts(article.summary, setSelectedConcept)}
-                      </p>
-
-                      {/* Topics */}
-                      {article.topics && article.topics.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mb-3">
-                          {article.topics.map((t, ti) => (
-                            <Badge key={ti} variant="secondary" className="text-xs font-normal">
-                              <Tag className="w-3 h-3 mr-1" /> {t}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Detected Concepts Summary */}
-                      {concepts.length > 0 && (
-                        <div className="mb-3">
-                          <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1"><Sparkles className="w-3 h-3" /> {concepts.length} Financial Concept{concepts.length > 1 ? 's' : ''} Detected — click highlighted text above or buttons below to learn:</p>
-                          <div className="flex flex-wrap gap-2">
-                            {concepts.map((c, ci) => (
-                              <Button key={ci} variant="outline" size="sm" onClick={() => setSelectedConcept(c)}
-                                className="text-xs h-auto py-1.5 px-3 text-blue-600 border-blue-200 hover:bg-blue-50">
-                                <BookOpen className="w-3 h-3 mr-1" /> {c.name} <ChevronRight className="w-3 h-3 ml-1" />
-                              </Button>
-                            ))}
+              {articles.map((article, i) => {
+                const concepts = detectConcepts(article.title + ' ' + article.summary);
+                return (
+                  <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
+                    <Card>
+                      <CardContent className="p-5">
+                        {/* Source + Date + Sentiment */}
+                        <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                            <span className="flex items-center gap-1"><Globe className="w-3 h-3" /> {article.source}</span>
+                            <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {new Date(article.date).toLocaleDateString()}</span>
+                          </div>
+                          <div className={`flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full border ${getSentimentBg(article.sentiment)} ${getSentimentColor(article.sentiment)}`}>
+                            <SentimentIcon label={article.sentiment} /> {article.sentiment} ({article.sentimentScore > 0 ? '+' : ''}{article.sentimentScore.toFixed(2)})
                           </div>
                         </div>
-                      )}
 
-                      {/* LLM Analysis Button */}
-                      <Button variant="outline" size="sm" onClick={() => analyzeLLM(i)}
-                        className="text-xs h-auto py-1.5 px-3 text-purple-600 border-purple-200 hover:bg-purple-50">
-                        <Cpu className="w-3 h-3 mr-1" />
-                        {llmLoading[i] ? 'Analyzing...' : llmResults[i] ? (expandedArticle === i ? 'Hide AI Analysis' : 'Show AI Analysis') : 'AI Deep Analysis'}
-                      </Button>
+                        {/* Title with highlights */}
+                        <h3 className="text-base font-semibold mb-2 leading-snug text-foreground">
+                          {article.url !== '#' ? (
+                            <a href={article.url} target="_blank" rel="noreferrer" className="hover:text-blue-600 transition">
+                              {highlightConcepts(article.title, setSelectedConcept)}
+                            </a>
+                          ) : highlightConcepts(article.title, setSelectedConcept)}
+                        </h3>
 
-                      {/* LLM Result */}
-                      <AnimatePresence>
-                        {expandedArticle === i && llmResults[i] && (
-                          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-                            <div className="mt-3 p-4 bg-purple-50 border border-purple-200 rounded-lg">
-                              <p className="text-xs font-medium text-purple-700 mb-2 flex items-center gap-1"><Brain className="w-3 h-3" /> AI Analysis</p>
-                              <div className="text-sm text-foreground leading-relaxed whitespace-pre-line">{llmResults[i]}</div>
-                            </div>
-                          </motion.div>
+                        {/* Summary with highlights */}
+                        <p className="text-sm text-muted-foreground leading-relaxed mb-3">
+                          {highlightConcepts(article.summary, setSelectedConcept)}
+                        </p>
+
+                        {/* Topics */}
+                        {article.topics && article.topics.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mb-3">
+                            {article.topics.map((t, ti) => (
+                              <Badge key={ti} variant="secondary" className="text-xs font-normal">
+                                <Tag className="w-3 h-3 mr-1" /> {t}
+                              </Badge>
+                            ))}
+                          </div>
                         )}
-                      </AnimatePresence>
+
+                        {/* Detected Concepts Summary */}
+                        {concepts.length > 0 && (
+                          <div className="mb-3">
+                            <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1"><Sparkles className="w-3 h-3" /> {concepts.length} Financial Concept{concepts.length > 1 ? 's' : ''} Detected — click highlighted text above or buttons below to learn:</p>
+                            <div className="flex flex-wrap gap-2">
+                              {concepts.map((c, ci) => (
+                                <Button key={ci} variant="outline" size="sm" onClick={() => setSelectedConcept(c)}
+                                  className="text-xs h-auto py-1.5 px-3 text-blue-600 border-blue-200 hover:bg-blue-50">
+                                  <BookOpen className="w-3 h-3 mr-1" /> {c.name} <ChevronRight className="w-3 h-3 ml-1" />
+                                </Button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* LLM Analysis Button */}
+                        <Button variant="outline" size="sm" onClick={() => analyzeLLM(i)}
+                          className="text-xs h-auto py-1.5 px-3 text-purple-600 border-purple-200 hover:bg-purple-50">
+                          <Cpu className="w-3 h-3 mr-1" />
+                          {llmLoading[i] ? 'Analyzing...' : llmResults[i] ? (expandedArticle === i ? 'Hide AI Analysis' : 'Show AI Analysis') : 'AI Deep Analysis'}
+                        </Button>
+
+                        {/* LLM Result */}
+                        <AnimatePresence>
+                          {expandedArticle === i && llmResults[i] && (
+                            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                              <div className="mt-3 p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                                <p className="text-xs font-medium text-purple-700 mb-2 flex items-center gap-1"><Brain className="w-3 h-3" /> AI Analysis</p>
+                                <div className="text-sm text-foreground leading-relaxed whitespace-pre-line">{llmResults[i]}</div>
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                );
+              })}
+            </TabsContent>
+
+            {/* ════════ ANALYTICS VIEW ════════ */}
+            <TabsContent value="analytics" className="mt-6 space-y-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {[
+                  { label: 'Total Articles', value: articles.length, icon: Globe, color: 'text-blue-600' },
+                  { label: 'Avg Sentiment', value: (analytics.avgScore > 0 ? '+' : '') + analytics.avgScore.toFixed(2), icon: Activity, color: analytics.avgScore > 0 ? 'text-emerald-600' : analytics.avgScore < 0 ? 'text-red-600' : 'text-muted-foreground' },
+                  { label: 'Concepts Found', value: analytics.totalConcepts, icon: Sparkles, color: 'text-purple-600' },
+                  { label: 'Density', value: articles.length ? (analytics.totalConcepts / articles.length).toFixed(1) + '/article' : '0', icon: TrendingUp, color: 'text-orange-600' },
+                ].map((kpi, i) => (
+                  <Card key={i}>
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <kpi.icon className={`w-4 h-4 ${kpi.color}`} />
+                        <span className="text-xs text-muted-foreground">{kpi.label}</span>
+                      </div>
+                      <p className={`text-2xl font-bold ${kpi.color}`}>{kpi.value}</p>
                     </CardContent>
                   </Card>
-                </motion.div>
-              );
-            })}
-          </TabsContent>
+                ))}
+              </div>
 
-          {/* ════════ ANALYTICS VIEW ════════ */}
-          <TabsContent value="analytics" className="mt-6 space-y-6">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {[
-                { label: 'Total Articles', value: articles.length, icon: Globe, color: 'text-blue-600' },
-                { label: 'Avg Sentiment', value: (analytics.avgScore > 0 ? '+' : '') + analytics.avgScore.toFixed(2), icon: Activity, color: analytics.avgScore > 0 ? 'text-emerald-600' : analytics.avgScore < 0 ? 'text-red-600' : 'text-muted-foreground' },
-                { label: 'Concepts Found', value: analytics.totalConcepts, icon: Sparkles, color: 'text-purple-600' },
-                { label: 'Density', value: articles.length ? (analytics.totalConcepts / articles.length).toFixed(1) + '/article' : '0', icon: TrendingUp, color: 'text-orange-600' },
-              ].map((kpi, i) => (
-                <Card key={i}>
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <kpi.icon className={`w-4 h-4 ${kpi.color}`} />
-                      <span className="text-xs text-muted-foreground">{kpi.label}</span>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card>
+                  <CardContent className="p-5">
+                    <h3 className="text-sm font-semibold mb-4 flex items-center gap-2 text-foreground">
+                      <Activity className="w-4 h-4 text-blue-600" /> Sentiment Distribution
+                    </h3>
+                    {analytics.sentimentData.length > 0 ? (
+                      <ResponsiveContainer width="100%" height={250}>
+                        <PieChart>
+                          <Pie data={analytics.sentimentData} cx="50%" cy="50%" innerRadius={60} outerRadius={100} paddingAngle={3} dataKey="value">
+                            {analytics.sentimentData.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
+                          </Pie>
+                          <Tooltip contentStyle={{ background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: '8px', color: '#1f2937' }} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    ) : <p className="text-muted-foreground text-sm">No data</p>}
+                    <div className="flex flex-wrap gap-3 mt-2 justify-center">
+                      {analytics.sentimentData.map((s, i) => (
+                        <span key={i} className="text-xs text-muted-foreground flex items-center gap-1">
+                          <span className="w-2 h-2 rounded-full" style={{ background: CHART_COLORS[i % CHART_COLORS.length] }}></span>
+                          {s.name} ({s.value})
+                        </span>
+                      ))}
                     </div>
-                    <p className={`text-2xl font-bold ${kpi.color}`}>{kpi.value}</p>
                   </CardContent>
                 </Card>
-              ))}
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card>
-                <CardContent className="p-5">
-                  <h3 className="text-sm font-semibold mb-4 flex items-center gap-2 text-foreground">
-                    <Activity className="w-4 h-4 text-blue-600" /> Sentiment Distribution
-                  </h3>
-                  {analytics.sentimentData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={250}>
-                      <PieChart>
-                        <Pie data={analytics.sentimentData} cx="50%" cy="50%" innerRadius={60} outerRadius={100} paddingAngle={3} dataKey="value">
-                          {analytics.sentimentData.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
-                        </Pie>
-                        <Tooltip contentStyle={{ background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: '8px', color: '#1f2937' }} />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  ) : <p className="text-muted-foreground text-sm">No data</p>}
-                  <div className="flex flex-wrap gap-3 mt-2 justify-center">
-                    {analytics.sentimentData.map((s, i) => (
-                      <span key={i} className="text-xs text-muted-foreground flex items-center gap-1">
-                        <span className="w-2 h-2 rounded-full" style={{ background: CHART_COLORS[i % CHART_COLORS.length] }}></span>
-                        {s.name} ({s.value})
-                      </span>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-5">
-                  <h3 className="text-sm font-semibold mb-4 flex items-center gap-2 text-foreground">
-                    <Sparkles className="w-4 h-4 text-purple-600" /> Concept Frequency
-                  </h3>
-                  {analytics.conceptData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={250}>
-                      <BarChart data={analytics.conceptData} layout="vertical" margin={{ left: 80 }}>
-                        <XAxis type="number" tick={{ fill: '#6b7280', fontSize: 12 }} allowDecimals={false} />
-                        <YAxis type="category" dataKey="name" tick={{ fill: '#6b7280', fontSize: 12 }} width={75} />
-                        <Tooltip contentStyle={{ background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: '8px', color: '#1f2937' }} />
-                        <Bar dataKey="count" fill="#8b5cf6" radius={[0, 4, 4, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  ) : <p className="text-muted-foreground text-sm">No concepts detected</p>}
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          {/* ════════ CONCEPT LIBRARY VIEW ════════ */}
-          <TabsContent value="concepts" className="mt-6">
-            <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-xl text-sm text-blue-700">
-              <p className="font-medium mb-1">📚 Financial Concept Library — {Object.keys(CONCEPTS).length} concepts</p>
-              <p className="text-blue-600">Click any card to learn the definition, what it signals for investors, and how to interpret it when you see it in the news.</p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {Object.values(CONCEPTS).map((c, i) => (
-                <motion.div key={i} onClick={() => setSelectedConcept(c)}
-                  initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.02 }}
-                  className="cursor-pointer group">
-                  <Card className="h-full hover:border-blue-300 hover:shadow-md transition">
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between mb-2">
-                        <div>
-                          <h3 className="font-semibold text-blue-600">{c.name}</h3>
-                          <p className="text-xs text-muted-foreground">{c.full}</p>
-                        </div>
-                        <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-blue-500 transition" />
-                      </div>
-                      <p className="text-xs text-muted-foreground line-clamp-2">{c.definition}</p>
-                      <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
-                        <Zap className="w-3 h-3" /> {c.signal.length} signal{c.signal.length > 1 ? 's' : ''}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))}
-            </div>
-          </TabsContent>
-
-          {/* 🔸 NEW — Financial Statements tab content */}
-          <TabsContent value="statements" className="mt-6">
-            <FinancialStatements />
-          </TabsContent>
-        </Tabs>
-      </div>
-
-      {/* ════════ Concept Detail Dialog ════════ */}
-      <Dialog open={!!selectedConcept} onOpenChange={(open) => { if (!open) setSelectedConcept(null); }}>
-        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
-          {selectedConcept && (
-            <>
-              <DialogHeader>
-                <DialogTitle className="text-xl text-blue-600">{selectedConcept.name}</DialogTitle>
-                <p className="text-sm text-muted-foreground">{selectedConcept.full}</p>
-              </DialogHeader>
-
-              <div className="space-y-4 mt-2">
-                <div>
-                  <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">📖 Definition</h4>
-                  <p className="text-sm text-foreground leading-relaxed">{selectedConcept.definition}</p>
-                </div>
-
-                <div>
-                  <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">⚡ What This Signals for Investors</h4>
-                  <div className="space-y-2">
-                    {selectedConcept.signal.map((s, i) => (
-                      <div key={i} className="flex items-start gap-2 text-sm text-foreground bg-background rounded-lg p-3">
-                        <Zap className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
-                        <span>{s}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">🔍 Trigger Words in News</h4>
-                  <div className="flex flex-wrap gap-1">
-                    {selectedConcept.aliases.map((a, i) => (
-                      <Badge key={i} variant="outline" className="text-xs text-amber-700 border-amber-200 bg-amber-50">
-                        {a}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
+                <Card>
+                  <CardContent className="p-5">
+                    <h3 className="text-sm font-semibold mb-4 flex items-center gap-2 text-foreground">
+                      <Sparkles className="w-4 h-4 text-purple-600" /> Concept Frequency
+                    </h3>
+                    {analytics.conceptData.length > 0 ? (
+                      <ResponsiveContainer width="100%" height={250}>
+                        <BarChart data={analytics.conceptData} layout="vertical" margin={{ left: 80 }}>
+                          <XAxis type="number" tick={{ fill: '#6b7280', fontSize: 12 }} allowDecimals={false} />
+                          <YAxis type="category" dataKey="name" tick={{ fill: '#6b7280', fontSize: 12 }} width={75} />
+                          <Tooltip contentStyle={{ background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: '8px', color: '#1f2937' }} />
+                          <Bar dataKey="count" fill="#8b5cf6" radius={[0, 4, 4, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    ) : <p className="text-muted-foreground text-sm">No concepts detected</p>}
+                  </CardContent>
+                </Card>
               </div>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
-    </div>
+            </TabsContent>
+
+            {/* ════════ CONCEPT LIBRARY VIEW ════════ */}
+            <TabsContent value="concepts" className="mt-6">
+              <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-xl text-sm text-blue-700">
+                <p className="font-medium mb-1">📚 Financial Concept Library — {Object.keys(CONCEPTS).length} concepts</p>
+                <p className="text-blue-600">Click any card to learn the definition, what it signals for investors, and how to interpret it when you see it in the news.</p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {Object.values(CONCEPTS).map((c, i) => (
+                  <motion.div key={i} onClick={() => setSelectedConcept(c)}
+                    initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.02 }}
+                    className="cursor-pointer group">
+                    <Card className="h-full hover:border-blue-300 hover:shadow-md transition">
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between mb-2">
+                          <div>
+                            <h3 className="font-semibold text-blue-600">{c.name}</h3>
+                            <p className="text-xs text-muted-foreground">{c.full}</p>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-blue-500 transition" />
+                        </div>
+                        <p className="text-xs text-muted-foreground line-clamp-2">{c.definition}</p>
+                        <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
+                          <Zap className="w-3 h-3" /> {c.signal.length} signal{c.signal.length > 1 ? 's' : ''}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                ))}
+              </div>
+            </TabsContent>
+
+            {/* ════════ Financial Statements View ════════ */}
+            <TabsContent value="statements" className="mt-6">
+              <FinancialStatements />
+            </TabsContent>
+          </Tabs>
+        </div>
+
+        {/* ════════ Concept Detail Dialog ════════ */}
+        <Dialog open={!!selectedConcept} onOpenChange={(open) => { if (!open) setSelectedConcept(null); }}>
+          <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+            {selectedConcept && (
+              <>
+                <DialogHeader>
+                  <DialogTitle className="text-xl text-blue-600">{selectedConcept.name}</DialogTitle>
+                  <p className="text-sm text-muted-foreground">{selectedConcept.full}</p>
+                </DialogHeader>
+
+                <div className="space-y-4 mt-2">
+                  <div>
+                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">📖 Definition</h4>
+                    <p className="text-sm text-foreground leading-relaxed">{selectedConcept.definition}</p>
+                  </div>
+
+                  <div>
+                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">⚡ What This Signals for Investors</h4>
+                    <div className="space-y-2">
+                      {selectedConcept.signal.map((s, i) => (
+                        <div key={i} className="flex items-start gap-2 text-sm text-foreground bg-background rounded-lg p-3">
+                          <Zap className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                          <span>{s}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">🔍 Trigger Words in News</h4>
+                    <div className="flex flex-wrap gap-1">
+                      {selectedConcept.aliases.map((a, i) => (
+                        <Badge key={i} variant="outline" className="text-xs text-amber-700 border-amber-200 bg-amber-50">
+                          {a}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
+      </div>
     </AppLayout>
   );
 }
