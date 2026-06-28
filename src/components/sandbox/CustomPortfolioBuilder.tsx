@@ -1,31 +1,87 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, X, Play, Loader2, Brain, RefreshCw, Info } from "lucide-react";
+import { Plus, X, Play, Loader2, Brain, RefreshCw, Info, Layers, AlertTriangle } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import ReactMarkdown from "react-markdown";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import MetricsPanel from "./MetricsPanel";
 import StrategyChart from "./StrategyChart";
-import { ASSET_UNIVERSE, ASSET_CATEGORIES, MAX_PORTFOLIO_ASSETS, type PortfolioAsset } from "@/data/portfolio-assets";
-import { useMultiTickerData, computeCustomBacktest, type SelectedAsset } from "@/hooks/useCustomBacktest";
+import { ASSET_UNIVERSE, ASSET_CATEGORIES, MAX_PORTFOLIO_ASSETS, CORRELATION_WARNINGS, TAG_STYLES, type PortfolioAsset } from "@/data/portfolio-assets";
+import { useMultiTickerData, computeCustomBacktest, type SelectedAsset, type RebalanceFrequency } from "@/hooks/useCustomBacktest";
 import { computeCustomRadarScores } from "./CustomRadarScoring";
 import type { BacktestResult } from "@/hooks/useStrategyBacktest";
+import type { TimePeriod } from "@/data/time-periods";
+import { DEFAULT_PERIOD } from "@/data/time-periods";
 
-const CustomPortfolioBuilder = () => {
+// ── Preset Templates ───────────────────────────────────────────────────────
+
+const PRESET_TEMPLATES: { name: string; icon: string; assets: SelectedAsset[] }[] = [
+  {
+    name: 'Classic 60/40',
+    icon: '⚖️',
+    assets: [
+      { ticker: 'SPY', weight: 60 },
+      { ticker: 'AGG', weight: 40 },
+    ],
+  },
+  {
+    name: 'AI Growth',
+    icon: '🚀',
+    assets: [
+      { ticker: 'QQQ', weight: 35 },
+      { ticker: 'NVDA', weight: 25 },
+      { ticker: 'AMZN', weight: 20 },
+      { ticker: 'GOOGL', weight: 20 },
+    ],
+  },
+  {
+    name: 'Defensive',
+    icon: '🛡️',
+    assets: [
+      { ticker: 'AGG', weight: 35 },
+      { ticker: 'TLT', weight: 20 },
+      { ticker: 'GLD', weight: 20 },
+      { ticker: 'JNJ', weight: 15 },
+      { ticker: 'KO', weight: 10 },
+    ],
+  },
+  {
+    name: 'Global Mix',
+    icon: '🌍',
+    assets: [
+      { ticker: 'SPY', weight: 30 },
+      { ticker: 'EFA', weight: 20 },
+      { ticker: 'IWM', weight: 15 },
+      { ticker: 'AGG', weight: 20 },
+      { ticker: 'GLD', weight: 15 },
+    ],
+  },
+  {
+    name: 'Value & Income',
+    icon: '💰',
+    assets: [
+      { ticker: 'BRKB', weight: 30 },
+      { ticker: 'VNQ', weight: 25 },
+      { ticker: 'HYG', weight: 20 },
+      { ticker: 'XOM', weight: 15 },
+      { ticker: 'NEE', weight: 10 },
+    ],
+  },
+];
+
+
+const CustomPortfolioBuilder = ({ period = DEFAULT_PERIOD }: { period?: TimePeriod }) => {
   const [selectedAssets, setSelectedAssets] = useState<SelectedAsset[]>([]);
   const [backtestResult, setBacktestResult] = useState<BacktestResult | null>(null);
   const [hasRun, setHasRun] = useState(false);
+  const [rebalanceFreq, setRebalanceFreq] = useState<RebalanceFrequency>('monthly');
 
-  // Always include SPY for benchmark
-  const tickersToFetch = useMemo(() => {
-    const tickers = selectedAssets.map(a => a.ticker);
-    if (!tickers.includes('SPY')) tickers.push('SPY');
-    return tickers;
-  }, [selectedAssets]);
+  const tickersToFetch = useMemo(() => selectedAssets.map(a => a.ticker), [selectedAssets]);
 
   const { data: priceData, isLoading: isLoadingData } = useMultiTickerData(
-    tickersToFetch.length > 1 || (tickersToFetch.length === 1 && selectedAssets.length > 0) ? tickersToFetch : []
+    tickersToFetch,
+    period,
   );
 
   // Add asset
@@ -92,28 +148,70 @@ const CustomPortfolioBuilder = () => {
   // Run backtest
   const runBacktest = useCallback(() => {
     if (!priceData || selectedAssets.length === 0) return;
-    const result = computeCustomBacktest(selectedAssets, priceData);
+    const result = computeCustomBacktest(selectedAssets, priceData, period.riskFreeAnnual, rebalanceFreq);
     setBacktestResult(result);
     setHasRun(true);
-  }, [priceData, selectedAssets]);
+  }, [priceData, selectedAssets, period, rebalanceFreq]);
 
   const totalWeight = selectedAssets.reduce((s, a) => s + a.weight, 0);
   const isValid = selectedAssets.length > 0 && totalWeight === 100;
 
+  // Detect correlated asset groups in the current selection
+  const correlationWarnings = useMemo(() => {
+    const groupCounts: Record<string, string[]> = {};
+    selectedAssets.forEach(a => {
+      const info = ASSET_UNIVERSE.find(u => u.ticker === a.ticker);
+      if (!info) return;
+      if (!groupCounts[info.correlationGroup]) groupCounts[info.correlationGroup] = [];
+      groupCounts[info.correlationGroup].push(a.ticker);
+    });
+    return Object.entries(groupCounts)
+      .filter(([group, tickers]) => tickers.length >= 2 && CORRELATION_WARNINGS[group])
+      .map(([group, tickers]) => ({ group, tickers, message: CORRELATION_WARNINGS[group] }));
+  }, [selectedAssets]);
+
+  const loadPreset = useCallback((preset: typeof PRESET_TEMPLATES[number]) => {
+    setSelectedAssets(preset.assets);
+    setHasRun(false);
+  }, []);
+
   return (
     <div className="space-y-5">
+      {/* Preset Templates */}
+      <div className="rounded-xl border border-border bg-card p-5">
+        <div className="flex items-center gap-2 mb-3">
+          <Layers className="h-4 w-4 text-muted-foreground" />
+          <h3 className="text-sm font-medium text-foreground">Start from a Preset</h3>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {PRESET_TEMPLATES.map(preset => (
+            <button
+              key={preset.name}
+              onClick={() => loadPreset(preset)}
+              className="flex flex-col items-start rounded-lg border border-border bg-secondary/50 px-3 py-2.5 text-left hover:border-muted-foreground/40 hover:bg-accent transition-all"
+            >
+              <span className="text-base mb-1">{preset.icon}</span>
+              <span className="text-xs font-medium text-foreground">{preset.name}</span>
+              <span className="text-[10px] text-muted-foreground mt-0.5">
+                {preset.assets.map(a => `${a.ticker} ${a.weight}%`).join(' · ')}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Asset Selection */}
       <div className="rounded-xl border border-border bg-card p-5">
         <h3 className="text-sm font-medium text-foreground mb-3">
-          Select Assets <span className="text-muted-foreground">({selectedAssets.length}/{MAX_PORTFOLIO_ASSETS})</span>
+          Customize Assets <span className="text-muted-foreground">({selectedAssets.length}/{MAX_PORTFOLIO_ASSETS})</span>
         </h3>
-        <div className="space-y-4">
+        <div className="space-y-5">
           {ASSET_CATEGORIES.map(cat => {
             const assets = ASSET_UNIVERSE.filter(a => a.category === cat.key);
             return (
               <div key={cat.key}>
                 <p className="text-xs text-muted-foreground mb-2">{cat.icon} {cat.label}</p>
-                <div className="flex flex-wrap gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {assets.map(asset => {
                     const isSelected = selectedAssets.some(a => a.ticker === asset.ticker);
                     const isFull = selectedAssets.length >= MAX_PORTFOLIO_ASSETS && !isSelected;
@@ -122,17 +220,41 @@ const CustomPortfolioBuilder = () => {
                         key={asset.ticker}
                         onClick={() => isSelected ? removeAsset(asset.ticker) : addAsset(asset.ticker)}
                         disabled={isFull}
-                        className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs transition-all ${
+                        className={`flex flex-col items-start rounded-lg border p-3 text-left transition-all ${
                           isSelected
-                            ? 'border-primary bg-primary/10 text-foreground'
+                            ? 'border-primary bg-primary/10'
                             : isFull
-                              ? 'border-border bg-muted text-muted-foreground opacity-50 cursor-not-allowed'
-                              : 'border-border bg-card text-muted-foreground hover:border-muted-foreground/40 hover:text-foreground'
+                              ? 'border-border bg-muted opacity-50 cursor-not-allowed'
+                              : 'border-border bg-card hover:border-muted-foreground/40 hover:bg-secondary/50'
                         }`}
                       >
-                        {isSelected ? <X className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
-                        <span className="font-mono font-medium">{asset.ticker}</span>
-                        <span className="hidden sm:inline">{asset.name}</span>
+                        {/* Header row */}
+                        <div className="flex items-center justify-between w-full mb-1">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: asset.color }} />
+                            <span className="text-xs font-mono font-bold text-foreground">{asset.ticker}</span>
+                            <span className="text-xs text-muted-foreground">{asset.name}</span>
+                          </div>
+                          {isSelected
+                            ? <X className="h-3 w-3 text-primary shrink-0" />
+                            : <Plus className="h-3 w-3 text-muted-foreground shrink-0" />
+                          }
+                        </div>
+                        {/* Description */}
+                        <p className="text-[11px] text-muted-foreground leading-relaxed mb-2">
+                          {asset.description}
+                        </p>
+                        {/* Tags */}
+                        <div className="flex flex-wrap gap-1">
+                          {asset.tags.map(tag => (
+                            <span
+                              key={tag}
+                              className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${TAG_STYLES[tag]}`}
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
                       </button>
                     );
                   })}
@@ -142,6 +264,30 @@ const CustomPortfolioBuilder = () => {
           })}
         </div>
       </div>
+
+      {/* Correlation Warning */}
+      <AnimatePresence>
+        {correlationWarnings.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            className="space-y-2"
+          >
+            {correlationWarnings.map(w => (
+              <div key={w.group} className="flex items-start gap-2.5 rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3">
+                <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-xs font-semibold text-amber-500 mb-0.5">
+                    High Correlation: {w.tickers.join(' + ')}
+                  </p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">{w.message}</p>
+                </div>
+              </div>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Weight Sliders */}
       <AnimatePresence>
@@ -196,6 +342,59 @@ const CustomPortfolioBuilder = () => {
               })}
             </div>
 
+            {/* Rebalancing toggle — cards are the buttons */}
+            <div className="space-y-3">
+              <p className="text-xs font-medium text-foreground">Rebalancing Strategy</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {/* Card A */}
+                <button
+                  onClick={() => { setRebalanceFreq('monthly'); setHasRun(false); }}
+                  className={`flex flex-col items-start rounded-lg border p-3 text-left transition-all ${
+                    rebalanceFreq === 'monthly'
+                      ? 'border-primary bg-primary/10 ring-1 ring-primary/30'
+                      : 'border-border bg-secondary/40 hover:border-muted-foreground/40'
+                  }`}
+                >
+                  <div className="flex items-center justify-between w-full mb-1.5">
+                    <p className="text-xs font-semibold text-foreground">📅 Rebalance Monthly</p>
+                    {rebalanceFreq === 'monthly' && (
+                      <span className="text-[10px] font-medium text-primary">Selected</span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-muted-foreground leading-relaxed">
+                    Sell a bit of what grew, buy more of what lagged — restoring your target weights every month.
+                    Automatically "sell high, buy low." Works best in volatile or range-bound markets.
+                  </p>
+                </button>
+
+                {/* Card B */}
+                <button
+                  onClick={() => { setRebalanceFreq('none'); setHasRun(false); }}
+                  className={`flex flex-col items-start rounded-lg border p-3 text-left transition-all ${
+                    rebalanceFreq === 'none'
+                      ? 'border-primary bg-primary/10 ring-1 ring-primary/30'
+                      : 'border-border bg-secondary/40 hover:border-muted-foreground/40'
+                  }`}
+                >
+                  <div className="flex items-center justify-between w-full mb-1.5">
+                    <p className="text-xs font-semibold text-foreground">📌 Buy-and-Hold</p>
+                    {rebalanceFreq === 'none' && (
+                      <span className="text-[10px] font-medium text-primary">Selected</span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-muted-foreground leading-relaxed">
+                    Buy once, never adjust. Winners compound freely without being trimmed.
+                    Simpler, and often outperforms rebalancing in a strong one-directional bull market.
+                  </p>
+                </button>
+              </div>
+
+              {/* Context note */}
+              <p className="text-[11px] text-muted-foreground">
+                The chart always shows <span className="font-medium text-foreground">both lines</span> — your chosen strategy vs buy-and-hold — so you can directly compare whether rebalancing helped or hurt in that period.
+              </p>
+            </div>
+
             {/* Run button */}
             <button
               onClick={runBacktest}
@@ -232,6 +431,7 @@ const CustomPortfolioBuilder = () => {
               result={backtestResult}
               strategyColor="hsl(var(--primary))"
               showSignals={false}
+              benchmarkLabel="Buy-and-Hold (no rebalancing)"
             />
 
             {/* Custom Radar + AI Evaluation */}
@@ -258,7 +458,7 @@ const CustomPortfolioBuilder = () => {
             </motion.div>
 
             <p className="text-[10px] text-muted-foreground text-center">
-              This simulation uses historical data from Yahoo Finance (2021–2023) and is for educational purposes only.
+              This simulation uses historical data from Yahoo Finance ({period.subtitle}) and is for educational purposes only.
             </p>
           </motion.div>
         )}

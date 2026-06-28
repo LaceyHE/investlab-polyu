@@ -1,8 +1,9 @@
-// Backtesting engine for Sandbox strategies using real Yahoo Finance data (SPY, AGG)
-// Falls back to simulated data if API is unavailable
+// Backtesting engine — uses static JSON price data (real Yahoo Finance historical prices)
 
-import { useState, useMemo, useCallback } from "react";
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import type { TimePeriod } from "@/data/time-periods";
+import { DEFAULT_PERIOD } from "@/data/time-periods";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -11,17 +12,37 @@ export interface DailyPrice {
   close: number;
 }
 
+export interface IndicatorSeries {
+  label: string;
+  color: string;
+  dashed?: boolean;
+  values: (number | null)[]; // aligned with dates[], normalized to $10,000 start
+}
+
+export interface HoldingSegment {
+  fromDate: string;
+  toDate: string;
+  ticker: string;
+  color: string;
+}
+
 export interface BacktestResult {
   dates: string[];
-  portfolioValues: number[];   // $ from $10,000
-  benchmarkValues: number[];   // 100% SPY from $10,000
+  portfolioValues: number[];      // $ from $10,000 (with dividend reinvestment)
+  benchmarkValues: number[];      // benchmark from $10,000
+  noReinvestValues?: number[];    // $ from $10,000 (dividends taken as cash, not reinvested)
+  benchmarkLabel?: string;
   signals?: SignalMarker[];
-  totalReturn: number;         // %
-  cagr: number;                // %
-  volatility: number;          // annualized %
-  maxDrawdown: number;         // %
-  worstQuarter: number;        // %
+  indicators?: IndicatorSeries[];
+  currentHolding?: string;        // ticker held at end of period (momentum strategy)
+  holdingHistory?: HoldingSegment[]; // timeline of which asset was held when
+  totalReturn: number;
+  cagr: number;
+  volatility: number;
+  maxDrawdown: number;
+  worstQuarter: number;
   sharpeRatio: number;
+  totalDividendsReceived?: number;
 }
 
 export interface SignalMarker {
@@ -30,82 +51,36 @@ export interface SignalMarker {
   price: number;
 }
 
-// ── Data Fetching ──────────────────────────────────────────────────────────
-
-const START = '2021-01-01';
-const END = '2023-01-01';
 const INITIAL_CAPITAL = 10000;
-const RISK_FREE = 0.02 / 252; // daily risk-free rate (2% annual)
 
-async function fetchYahooData(ticker: string): Promise<DailyPrice[]> {
-  const p1 = Math.floor(new Date(START).getTime() / 1000);
-  const p2 = Math.floor(new Date(END).getTime() / 1000);
-  try {
-    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?period1=${p1}&period2=${p2}&interval=1d`;
-    const resp = await fetch(url);
-    if (!resp.ok) throw new Error('API error');
-    const json = await resp.json();
-    const result = json.chart.result[0];
-    const ts = result.timestamp;
-    const closes = result.indicators.quote[0].close;
-    return ts.map((t: number, i: number) => ({
-      date: new Date(t * 1000).toISOString().split('T')[0],
-      close: closes[i] ?? 0,
-    })).filter((d: DailyPrice) => d.close > 0);
-  } catch {
-    return generateFallbackData(ticker);
-  }
+// ── Static Data Loading ────────────────────────────────────────────────────
+
+async function loadPeriodData(periodKey: string): Promise<Record<string, DailyPrice[]>> {
+  const mod = await import(`../data/prices/${periodKey}.json`);
+  return mod.default as Record<string, DailyPrice[]>;
 }
 
-// Deterministic fallback mimicking SPY and AGG behavior in 2021-2022
-function generateFallbackData(ticker: string): DailyPrice[] {
-  const points: DailyPrice[] = [];
-  const start = new Date(START);
-  const end = new Date(END);
-
-  // Realistic price behavior per ticker in 2021-2022
-  const configs: Record<string, { startPrice: number; dailyDrift: number; vol: number; regime2022: number }> = {
-    SPY: { startPrice: 380, dailyDrift: 0.0001, vol: 0.012, regime2022: -0.0004 },
-    AGG: { startPrice: 115, dailyDrift: -0.0001, vol: 0.004, regime2022: -0.0003 },
-    QQQ: { startPrice: 310, dailyDrift: 0.00015, vol: 0.015, regime2022: -0.0006 },
-    GLD: { startPrice: 170, dailyDrift: 0.00005, vol: 0.008, regime2022: 0.0001 },
-  };
-
-  const cfg = configs[ticker] || configs.SPY;
-  let price = cfg.startPrice;
-
-  let seed = ticker.charCodeAt(0) * 137;
-  const rand = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
-
-  const cur = new Date(start);
-  while (cur <= end) {
-    if (cur.getDay() !== 0 && cur.getDay() !== 6) {
-      const year = cur.getFullYear();
-      const regime = year === 2022 ? cfg.regime2022 : (cfg.dailyDrift > 0 ? 0.0006 : 0.0001);
-      price *= 1 + regime + cfg.dailyDrift + (rand() - 0.5) * cfg.vol * 2;
-      price = Math.max(price, cfg.startPrice * 0.6);
-      points.push({ date: cur.toISOString().split('T')[0], close: price });
-    }
-    cur.setDate(cur.getDate() + 1);
-  }
-  return points;
-}
-
-export function useMarketPrices() {
+export function useMarketPrices(period: TimePeriod = DEFAULT_PERIOD) {
   return useQuery({
-    queryKey: ['sandbox-market-data', START, END],
+    queryKey: ['sandbox-market-data', period.key],
     queryFn: async () => {
-      const [spy, agg, qqq, gld] = await Promise.all([
-        fetchYahooData('SPY'),
-        fetchYahooData('AGG'),
-        fetchYahooData('QQQ'),
-        fetchYahooData('GLD'),
+      const [data, divData] = await Promise.all([
+        loadPeriodData(period.key),
+        import('../data/dividends.json').then(m => m.default as Record<string, Record<string, {date: string; amount: number}[]>>),
       ]);
-      return { spy, agg, qqq, gld };
+      return {
+        spy: data['SPY'] ?? [],
+        agg: data['AGG'] ?? [],
+        qqq: data['QQQ'] ?? [],
+        gld: data['GLD'] ?? [],
+        dvy: data['DVY'] ?? [],
+        dvyPrice: data['DVY_PRICE'] ?? [],
+        spyPrice: data['SPY_PRICE'] ?? [],
+        dividends: divData[period.key] ?? {},
+      };
     },
-    staleTime: 1000 * 60 * 60,
-    gcTime: 1000 * 60 * 60 * 24,
-    retry: 1,
+    staleTime: Infinity,
+    gcTime: Infinity,
   });
 }
 
@@ -123,33 +98,27 @@ function movingAverage(data: number[], period: number): (number | null)[] {
   });
 }
 
-function computeMetrics(portfolioValues: number[], dates: string[]): Omit<BacktestResult, 'dates' | 'portfolioValues' | 'benchmarkValues' | 'signals'> {
+function computeMetrics(
+  portfolioValues: number[],
+  riskFreeAnnual: number,
+): Omit<BacktestResult, 'dates' | 'portfolioValues' | 'benchmarkValues' | 'signals'> {
   const n = portfolioValues.length;
   const totalReturn = ((portfolioValues[n - 1] - portfolioValues[0]) / portfolioValues[0]) * 100;
 
-  // CAGR
   const years = n / 252;
   const cagr = years > 0 ? (Math.pow(portfolioValues[n - 1] / portfolioValues[0], 1 / years) - 1) * 100 : 0;
 
-  // Daily returns
   const returns = computeReturns(portfolioValues);
-
-  // Volatility (annualized)
   const avgRet = returns.reduce((a, b) => a + b, 0) / returns.length;
   const variance = returns.reduce((s, r) => s + (r - avgRet) ** 2, 0) / returns.length;
   const volatility = Math.sqrt(variance * 252) * 100;
 
-  // Sharpe Ratio
-  const excessReturns = returns.map(r => r - RISK_FREE);
+  const dailyRF = riskFreeAnnual / 252;
+  const excessReturns = returns.map(r => r - dailyRF);
   const avgExcess = excessReturns.reduce((a, b) => a + b, 0) / excessReturns.length;
   const excessStd = Math.sqrt(excessReturns.reduce((s, r) => s + (r - avgExcess) ** 2, 0) / excessReturns.length);
-  const sharpeRatio = excessStd > 0 ? (avgExcess * Math.sqrt(252)) / (excessStd * Math.sqrt(1)) : 0;
-  // Simplified: sharpe = (annualized excess) / (annualized vol)
-  const annualExcess = avgExcess * 252;
-  const annualStd = excessStd * Math.sqrt(252);
-  const sharpe = annualStd > 0 ? annualExcess / annualStd : 0;
+  const sharpeRatio = excessStd > 0 ? (avgExcess * 252) / (excessStd * Math.sqrt(252)) : 0;
 
-  // Max Drawdown
   let peak = portfolioValues[0];
   let maxDD = 0;
   portfolioValues.forEach(v => {
@@ -158,20 +127,18 @@ function computeMetrics(portfolioValues: number[], dates: string[]): Omit<Backte
     maxDD = Math.min(maxDD, dd);
   });
 
-  // Worst Quarter (~63 trading days)
   let worstQ = 0;
   for (let i = 63; i < n; i++) {
     const qRet = ((portfolioValues[i] - portfolioValues[i - 63]) / portfolioValues[i - 63]) * 100;
     worstQ = Math.min(worstQ, qRet);
   }
 
-  return { totalReturn, cagr, volatility, maxDrawdown: maxDD, worstQuarter: worstQ, sharpeRatio: sharpe };
+  return { totalReturn, cagr, volatility, maxDrawdown: maxDD, worstQuarter: worstQ, sharpeRatio };
 }
 
 // ── Strategy 1: 60/40 Classic ──────────────────────────────────────────────
 
-function backtest6040(spy: DailyPrice[], agg: DailyPrice[], stockPct: number): BacktestResult {
-  // Align dates
+function backtest6040(spy: DailyPrice[], agg: DailyPrice[], stockPct: number, rf: number): BacktestResult {
   const aggMap = new Map(agg.map(d => [d.date, d.close]));
   const aligned = spy.filter(d => aggMap.has(d.date)).map(d => ({
     date: d.date,
@@ -180,8 +147,15 @@ function backtest6040(spy: DailyPrice[], agg: DailyPrice[], stockPct: number): B
   }));
 
   const bondPct = 100 - stockPct;
+
+  // Strategy: rebalance monthly to target allocation
   let stockShares = (INITIAL_CAPITAL * stockPct / 100) / aligned[0].spyClose;
   let bondShares = (INITIAL_CAPITAL * bondPct / 100) / aligned[0].aggClose;
+
+  // Benchmark: same initial allocation, buy-and-hold (no rebalancing)
+  // This isolates the value of rebalancing vs passive holding
+  const bmStockShares = (INITIAL_CAPITAL * stockPct / 100) / aligned[0].spyClose;
+  const bmBondShares = (INITIAL_CAPITAL * bondPct / 100) / aligned[0].aggClose;
 
   const portfolioValues: number[] = [];
   const benchmarkValues: number[] = [];
@@ -192,7 +166,6 @@ function backtest6040(spy: DailyPrice[], agg: DailyPrice[], stockPct: number): B
     const month = new Date(d.date).getMonth();
     const portfolioVal = stockShares * d.spyClose + bondShares * d.aggClose;
 
-    // Monthly rebalancing
     if (i > 0 && month !== lastRebalanceMonth) {
       stockShares = (portfolioVal * stockPct / 100) / d.spyClose;
       bondShares = (portfolioVal * bondPct / 100) / d.aggClose;
@@ -200,19 +173,19 @@ function backtest6040(spy: DailyPrice[], agg: DailyPrice[], stockPct: number): B
     lastRebalanceMonth = month;
 
     portfolioValues.push(portfolioVal);
-    benchmarkValues.push((INITIAL_CAPITAL / aligned[0].spyClose) * d.spyClose);
+    // Benchmark = same weights, never rebalanced
+    benchmarkValues.push(bmStockShares * d.spyClose + bmBondShares * d.aggClose);
     dates.push(d.date);
   });
 
-  return { dates, portfolioValues, benchmarkValues, ...computeMetrics(portfolioValues, dates) };
+  return { dates, portfolioValues, benchmarkValues, ...computeMetrics(portfolioValues, rf) };
 }
 
 // ── Strategy 2: Trend Follower ─────────────────────────────────────────────
 
-function backtestTrend(spy: DailyPrice[], speed: number): BacktestResult {
-  // speed: 0=slow, 0.5=medium, 1=fast
-  const shortPeriod = Math.round(50 - speed * 40); // 50→10
-  const longPeriod = Math.round(200 - speed * 170); // 200→30
+function backtestTrend(spy: DailyPrice[], speed: number, rf: number): BacktestResult {
+  const shortPeriod = Math.round(50 - speed * 40);
+  const longPeriod = Math.round(200 - speed * 170);
 
   const closes = spy.map(d => d.close);
   const shortMA = movingAverage(closes, shortPeriod);
@@ -221,6 +194,7 @@ function backtestTrend(spy: DailyPrice[], speed: number): BacktestResult {
   let cash = INITIAL_CAPITAL;
   let shares = 0;
   let invested = false;
+  const dailyRF = rf / 252; // cash earns risk-free rate when out of market
 
   const portfolioValues: number[] = [];
   const benchmarkValues: number[] = [];
@@ -231,15 +205,16 @@ function backtestTrend(spy: DailyPrice[], speed: number): BacktestResult {
     const s = shortMA[i];
     const l = longMA[i];
 
+    // Cash compounds daily at the risk-free rate when not invested
+    if (!invested) cash *= (1 + dailyRF);
+
     if (s !== null && l !== null) {
       if (s > l && !invested) {
-        // Buy
         shares = cash / d.close;
         cash = 0;
         invested = true;
         signals.push({ date: d.date, type: 'buy', price: d.close });
       } else if (s <= l && invested) {
-        // Sell
         cash = shares * d.close;
         shares = 0;
         invested = false;
@@ -253,56 +228,128 @@ function backtestTrend(spy: DailyPrice[], speed: number): BacktestResult {
     dates.push(d.date);
   });
 
-  return { dates, portfolioValues, benchmarkValues, signals, ...computeMetrics(portfolioValues, dates) };
+  // Normalize MA lines to $10,000 base so they overlay on the SPY price panel
+  const spyStart = spy[0].close;
+  const indicators: IndicatorSeries[] = [
+    {
+      label: `Short MA (${shortPeriod})`,
+      color: 'hsl(38 92% 50%)',
+      values: shortMA.map(v => v !== null ? (v / spyStart) * 10000 : null),
+    },
+    {
+      label: `Long MA (${longPeriod})`,
+      color: 'hsl(270 60% 55%)',
+      dashed: true,
+      values: longMA.map(v => v !== null ? (v / spyStart) * 10000 : null),
+    },
+  ];
+
+  return { dates, portfolioValues, benchmarkValues, signals, indicators, ...computeMetrics(portfolioValues, rf) };
 }
 
 // ── Strategy 3: Income Machine ─────────────────────────────────────────────
 
-function backtestIncome(spy: DailyPrice[], agg: DailyPrice[], incomeWeight: number): BacktestResult {
-  // incomeWeight: 0=all growth, 1=all income
-  // Income proxy = AGG (lower vol, lower return)
-  // Growth proxy = SPY (higher vol, higher return)
-  // We add a small synthetic dividend yield to the income portion
+function backtestIncome(
+  spy: DailyPrice[],
+  dvy: DailyPrice[],
+  dvyPrice: DailyPrice[],
+  spyPrice: DailyPrice[],
+  incomeWeight: number,
+  rf: number,
+  dividendEvents: Record<string, { date: string; amount: number }[]>,
+): BacktestResult {
+  // Align SPY adjclose + DVY adjclose on common dates
+  const dvyAdjMap = new Map(dvy.map(d => [d.date, d.close]));
+  const dvyPriceMap = new Map(dvyPrice.map(d => [d.date, d.close]));
+  const spyPriceMap = new Map(spyPrice.map(d => [d.date, d.close]));
 
-  const aggMap = new Map(agg.map(d => [d.date, d.close]));
-  const aligned = spy.filter(d => aggMap.has(d.date)).map(d => ({
+  const aligned = spy.filter(d => dvyAdjMap.has(d.date)).map(d => ({
     date: d.date,
-    growthClose: d.close,
-    incomeClose: aggMap.get(d.date)!,
+    spyAdj: d.close,
+    spyUnadj: spyPriceMap.get(d.date) ?? d.close,
+    dvyAdj: dvyAdjMap.get(d.date)!,
+    dvyUnadj: dvyPriceMap.get(d.date) ?? dvyAdjMap.get(d.date)!,
   }));
 
   const growthPct = (1 - incomeWeight) * 100;
   const incomePct = incomeWeight * 100;
 
-  let growthShares = (INITIAL_CAPITAL * growthPct / 100) / aligned[0].growthClose;
-  let incomeShares = (INITIAL_CAPITAL * incomePct / 100) / aligned[0].incomeClose;
+  // ── WITH reinvestment (adjclose tracks reinvested dividends automatically) ──
+  let growthShares = (INITIAL_CAPITAL * growthPct / 100) / aligned[0].spyAdj;
+  let incomeShares = (INITIAL_CAPITAL * incomePct / 100) / aligned[0].dvyAdj;
 
-  // Simulate quarterly dividend reinvestment for income portion (3% annual yield proxy)
-  const dailyDivYield = 0.03 / 252;
+  // ── WITHOUT reinvestment (unadjusted prices + cash pocket for dividends) ──
+  let growthSharesNR = (INITIAL_CAPITAL * growthPct / 100) / aligned[0].spyUnadj;
+  let incomeSharesNR = (INITIAL_CAPITAL * incomePct / 100) / aligned[0].dvyUnadj;
+  let cashNR = 0; // dividends collected but not reinvested
+
+  const spyDivMap = new Map((dividendEvents['SPY'] ?? []).map(e => [e.date, e.amount]));
+  const dvyDivMap = new Map((dividendEvents['DVY'] ?? []).map(e => [e.date, e.amount]));
 
   const portfolioValues: number[] = [];
+  const noReinvestValues: number[] = [];
   const benchmarkValues: number[] = [];
   const dates: string[] = [];
+  let lastRebalanceMonth = -1;
+  let totalDividendsReceived = 0;
 
-  aligned.forEach((d) => {
-    // Reinvest dividends on income portion
-    incomeShares += (incomeShares * d.incomeClose * dailyDivYield) / d.incomeClose;
+  const spyAdjStart = aligned[0].spyAdj;
 
-    const val = growthShares * d.growthClose + incomeShares * d.incomeClose;
-    portfolioValues.push(val);
-    benchmarkValues.push((INITIAL_CAPITAL / aligned[0].growthClose) * d.growthClose);
+  aligned.forEach((d, i) => {
+    // Dividend events: accumulate cash (no reinvest path) and track total income
+    const spyDiv = spyDivMap.get(d.date) ?? 0;
+    const dvyDiv = dvyDivMap.get(d.date) ?? 0;
+    if (spyDiv > 0) {
+      totalDividendsReceived += growthSharesNR * spyDiv;
+      cashNR += growthSharesNR * spyDiv;
+    }
+    if (dvyDiv > 0) {
+      totalDividendsReceived += incomeSharesNR * dvyDiv;
+      cashNR += incomeSharesNR * dvyDiv;
+    }
+
+    // With-reinvestment portfolio value (adjclose embeds reinvested dividends)
+    const portVal = growthShares * d.spyAdj + incomeShares * d.dvyAdj;
+
+    // No-reinvestment portfolio value (unadjusted price + idle cash)
+    const portValNR = growthSharesNR * d.spyUnadj + incomeSharesNR * d.dvyUnadj + cashNR;
+
+    // Monthly rebalance the WITH-reinvestment portfolio only
+    const month = new Date(d.date).getMonth();
+    if (i > 0 && month !== lastRebalanceMonth) {
+      growthShares = (portVal * growthPct / 100) / d.spyAdj;
+      incomeShares = (portVal * incomePct / 100) / d.dvyAdj;
+    }
+    lastRebalanceMonth = month;
+
+    portfolioValues.push(portVal);
+    noReinvestValues.push(portValNR);
+    // Benchmark uses SPY adjusted close (with dividend reinvestment) — same basis as main portfolio
+    benchmarkValues.push((INITIAL_CAPITAL / spyAdjStart) * d.spyAdj);
     dates.push(d.date);
   });
 
-  return { dates, portfolioValues, benchmarkValues, ...computeMetrics(portfolioValues, dates) };
+  return {
+    dates,
+    portfolioValues,
+    noReinvestValues,
+    benchmarkValues,
+    benchmarkLabel: 'SPY Total Return (with dividends)',
+    totalDividendsReceived: Math.round(totalDividendsReceived),
+    ...computeMetrics(portfolioValues, rf),
+  };
 }
 
 // ── Strategy 4: Speed Racer (Cross-Asset Momentum) ─────────────────────────
 
-interface AssetSeries {
-  ticker: string;
-  prices: DailyPrice[];
-}
+const MOMENTUM_ASSETS = [
+  { ticker: 'SPY', color: 'hsl(210 60% 55%)' },
+  { ticker: 'QQQ', color: 'hsl(180 55% 45%)' },
+  { ticker: 'AGG', color: 'hsl(100 40% 50%)' },
+  { ticker: 'GLD', color: 'hsl(48 85% 55%)' },
+];
+
+const CASH_SEGMENT = { ticker: 'CASH', color: 'hsl(0 0% 60%)' };
 
 function backtestMomentum(
   spy: DailyPrice[],
@@ -310,21 +357,16 @@ function backtestMomentum(
   agg: DailyPrice[],
   gld: DailyPrice[],
   horizon: number,
+  rf: number,
 ): BacktestResult {
-  // horizon: 0→1 month lookback, 1→12 month lookback
-  const lookbackDays = Math.round(21 + horizon * 231); // 21 (1mo) to 252 (12mo)
+  // Max lookback capped at 126 days (6 months)
+  const lookbackDays = Math.round(21 + horizon * 105);
+  const dailyRF = rf / 252;
 
-  // Build date-aligned price maps for all 4 assets
-  const assets: AssetSeries[] = [
-    { ticker: 'SPY', prices: spy },
-    { ticker: 'QQQ', prices: qqq },
-    { ticker: 'AGG', prices: agg },
-    { ticker: 'GLD', prices: gld },
-  ];
+  const priceMaps = [spy, qqq, agg, gld].map(
+    prices => new Map(prices.map(d => [d.date, d.close]))
+  );
 
-  const priceMaps = assets.map(a => new Map(a.prices.map(d => [d.date, d.close])));
-
-  // Use SPY dates as the master calendar, filter to dates where ALL assets have data
   const allDates = spy
     .map(d => d.date)
     .filter(date => priceMaps.every(m => m.has(date)));
@@ -333,19 +375,22 @@ function backtestMomentum(
   const benchmarkValues: number[] = [];
   const dates: string[] = [];
   const signals: SignalMarker[] = [];
+  const holdingHistory: HoldingSegment[] = [];
 
-  let portfolioValue = INITIAL_CAPITAL;
-  let currentAssetIdx = 0; // start in SPY
+  let currentAssetIdx = 0;
   let shares = INITIAL_CAPITAL / priceMaps[0].get(allDates[0])!;
+  let cash = 0;
+  let inCash = false;
   let lastRebalanceMonth = -1;
+  let segmentStart = allDates[0];
 
   allDates.forEach((date, i) => {
     const month = new Date(date).getMonth();
-    const currentPrice = priceMaps[currentAssetIdx].get(date)!;
 
-    // Monthly rebalancing: pick the asset with the best momentum
+    // Cash earns risk-free rate each day when in defensive mode
+    if (inCash) cash *= (1 + dailyRF);
+
     if (i > 0 && month !== lastRebalanceMonth && i >= lookbackDays) {
-      // Calculate momentum for each asset
       const lookbackDate = allDates[i - lookbackDays];
       let bestIdx = 0;
       let bestMomentum = -Infinity;
@@ -355,35 +400,94 @@ function backtestMomentum(
         const nowPrice = pm.get(date);
         if (pastPrice && nowPrice) {
           const mom = (nowPrice - pastPrice) / pastPrice;
-          if (mom > bestMomentum) {
-            bestMomentum = mom;
-            bestIdx = idx;
-          }
+          if (mom > bestMomentum) { bestMomentum = mom; bestIdx = idx; }
         }
       });
 
-      // Switch asset if a better one is found
-      if (bestIdx !== currentAssetIdx) {
-        // Sell current
-        portfolioValue = shares * currentPrice;
-        signals.push({ date, type: 'sell', price: currentPrice });
-
-        // Buy new best asset
-        const newPrice = priceMaps[bestIdx].get(date)!;
-        shares = portfolioValue / newPrice;
-        currentAssetIdx = bestIdx;
-        signals.push({ date, type: 'buy', price: newPrice });
+      if (bestMomentum < 0) {
+        // ── Absolute momentum filter: ALL assets negative → go defensive (cash) ──
+        if (!inCash) {
+          const exitPrice = priceMaps[currentAssetIdx].get(date)!;
+          cash = shares * exitPrice;
+          shares = 0;
+          inCash = true;
+          signals.push({ date, type: 'sell', price: exitPrice });
+          holdingHistory.push({
+            fromDate: segmentStart, toDate: date,
+            ticker: MOMENTUM_ASSETS[currentAssetIdx].ticker,
+            color: MOMENTUM_ASSETS[currentAssetIdx].color,
+          });
+          segmentStart = date;
+        }
+        // Already in cash → stay, no action needed
+      } else {
+        // ── At least one asset has positive momentum → invest in the best one ──
+        if (inCash) {
+          // Coming out of cash → buy best asset
+          const entryPrice = priceMaps[bestIdx].get(date)!;
+          shares = cash / entryPrice;
+          cash = 0;
+          inCash = false;
+          currentAssetIdx = bestIdx;
+          signals.push({ date, type: 'buy', price: entryPrice });
+          holdingHistory.push({
+            fromDate: segmentStart, toDate: date,
+            ticker: CASH_SEGMENT.ticker, color: CASH_SEGMENT.color,
+          });
+          segmentStart = date;
+        } else if (bestIdx !== currentAssetIdx) {
+          // Rotate to a better asset
+          const exitPrice = priceMaps[currentAssetIdx].get(date)!;
+          const portVal = shares * exitPrice;
+          signals.push({ date, type: 'sell', price: exitPrice });
+          holdingHistory.push({
+            fromDate: segmentStart, toDate: date,
+            ticker: MOMENTUM_ASSETS[currentAssetIdx].ticker,
+            color: MOMENTUM_ASSETS[currentAssetIdx].color,
+          });
+          segmentStart = date;
+          const entryPrice = priceMaps[bestIdx].get(date)!;
+          shares = portVal / entryPrice;
+          currentAssetIdx = bestIdx;
+          signals.push({ date, type: 'buy', price: entryPrice });
+        }
       }
     }
     lastRebalanceMonth = month;
 
-    const val = shares * priceMaps[currentAssetIdx].get(date)!;
+    const val = inCash ? cash : shares * priceMaps[currentAssetIdx].get(date)!;
     portfolioValues.push(val);
-    benchmarkValues.push((INITIAL_CAPITAL / priceMaps[0].get(allDates[0])!) * priceMaps[0].get(date)!);
+
+    // Benchmark: equal-weight buy-and-hold of all 4 assets (25% each, never rebalanced)
+    // Shows: does momentum rotation beat simply holding all 4 equally?
+    const bmVal = priceMaps.reduce((sum, pm, idx) => {
+      const startPrice = pm.get(allDates[0])!;
+      const nowPrice = pm.get(date)!;
+      return sum + (INITIAL_CAPITAL * 0.25 / startPrice) * nowPrice;
+    }, 0);
+    benchmarkValues.push(bmVal);
     dates.push(date);
   });
 
-  return { dates, portfolioValues, benchmarkValues, signals, ...computeMetrics(portfolioValues, dates) };
+  // Close final segment
+  const finalAsset = inCash ? CASH_SEGMENT : MOMENTUM_ASSETS[currentAssetIdx];
+  holdingHistory.push({
+    fromDate: segmentStart,
+    toDate: allDates[allDates.length - 1],
+    ticker: finalAsset.ticker,
+    color: finalAsset.color,
+  });
+
+  return {
+    dates,
+    portfolioValues,
+    benchmarkValues,
+    benchmarkLabel: 'Equal-Weight (25% SPY + QQQ + AGG + GLD)',
+    signals,
+    currentHolding: finalAsset.ticker,
+    holdingHistory,
+    ...computeMetrics(portfolioValues, rf),
+  };
 }
 
 // ── Main Hook ──────────────────────────────────────────────────────────────
@@ -392,33 +496,38 @@ export type StrategyType = 'allocation' | 'trend' | 'income' | 'momentum' | 'cus
 
 export function useStrategyBacktest(
   strategy: StrategyType,
-  param: number, // 0-1 normalized slider value
+  param: number,
   spy: DailyPrice[] | undefined,
   agg: DailyPrice[] | undefined,
   qqq?: DailyPrice[],
   gld?: DailyPrice[],
+  period: TimePeriod = DEFAULT_PERIOD,
+  dvy?: DailyPrice[],
+  dvyPrice?: DailyPrice[],
+  spyPrice?: DailyPrice[],
+  dividends?: Record<string, { date: string; amount: number }[]>,
 ) {
   return useMemo<BacktestResult | null>(() => {
     if (!spy || spy.length === 0) return null;
+    const rf = period.riskFreeAnnual;
 
     switch (strategy) {
       case 'allocation': {
         if (!agg || agg.length === 0) return null;
-        const stockPct = Math.round(param * 100);
-        return backtest6040(spy, agg, stockPct);
+        return backtest6040(spy, agg, Math.round(param * 100), rf);
       }
       case 'trend':
-        return backtestTrend(spy, param);
+        return backtestTrend(spy, param, rf);
       case 'income': {
-        if (!agg || agg.length === 0) return null;
-        return backtestIncome(spy, agg, param);
+        if (!dvy || dvy.length === 0) return null;
+        return backtestIncome(spy, dvy, dvyPrice ?? dvy, spyPrice ?? spy, param, rf, dividends ?? {});
       }
       case 'momentum': {
-        if (!qqq || !agg || !gld || qqq.length === 0 || agg.length === 0 || gld.length === 0) return null;
-        return backtestMomentum(spy, qqq, agg, gld, param);
+        if (!qqq || !agg || !gld) return null;
+        return backtestMomentum(spy, qqq, agg, gld, param, rf);
       }
       default:
         return null;
     }
-  }, [strategy, param, spy, agg, qqq, gld]);
+  }, [strategy, param, spy, agg, qqq, gld, period, dvy, dvyPrice, spyPrice, dividends]);
 }
