@@ -10,7 +10,7 @@ import StrategyChart from "./StrategyChart";
 import { ASSET_UNIVERSE, ASSET_CATEGORIES, MAX_PORTFOLIO_ASSETS, CORRELATION_WARNINGS, TAG_STYLES, type PortfolioAsset } from "@/data/portfolio-assets";
 import { useMultiTickerData, computeCustomBacktest, type SelectedAsset, type RebalanceFrequency } from "@/hooks/useCustomBacktest";
 import { computeCustomRadarScores } from "./CustomRadarScoring";
-import type { BacktestResult } from "@/hooks/useStrategyBacktest";
+import type { BacktestResult, DailyPrice } from "@/hooks/useStrategyBacktest";
 import type { TimePeriod } from "@/data/time-periods";
 import { DEFAULT_PERIOD } from "@/data/time-periods";
 
@@ -75,6 +75,7 @@ const CustomPortfolioBuilder = ({ period = DEFAULT_PERIOD }: { period?: TimePeri
   const [selectedAssets, setSelectedAssets] = useState<SelectedAsset[]>([]);
   const [backtestResult, setBacktestResult] = useState<BacktestResult | null>(null);
   const [hasRun, setHasRun] = useState(false);
+  const [dataError, setDataError] = useState<string | null>(null);
   const [rebalanceFreq, setRebalanceFreq] = useState<RebalanceFrequency>('monthly');
 
   const tickersToFetch = useMemo(() => selectedAssets.map(a => a.ticker), [selectedAssets]);
@@ -148,10 +149,40 @@ const CustomPortfolioBuilder = ({ period = DEFAULT_PERIOD }: { period?: TimePeri
   // Run backtest
   const runBacktest = useCallback(() => {
     if (!priceData || selectedAssets.length === 0) return;
+
+    // Guard: any selected ticker with no price data → fail loudly instead of silently.
+    const missing = selectedAssets.filter(a => !(priceData[a.ticker]?.length));
+    if (missing.length > 0) {
+      setDataError(`No price data available for ${missing.map(m => m.ticker).join(', ')} in this period.`);
+      setBacktestResult(null);
+      setHasRun(true);
+      return;
+    }
+
     const result = computeCustomBacktest(selectedAssets, priceData, period.riskFreeAnnual, rebalanceFreq);
+    if (!result) {
+      setDataError("Not enough overlapping history among the selected assets to run a backtest in this period.");
+      setBacktestResult(null);
+      setHasRun(true);
+      return;
+    }
+
+    setDataError(null);
     setBacktestResult(result);
     setHasRun(true);
   }, [priceData, selectedAssets, period, rebalanceFreq]);
+
+  // Detect a shortened window: a selected asset with a later start date silently
+  // truncates the whole backtest to the overlap, so surface it to the learner.
+  const windowNote = useMemo(() => {
+    if (!backtestResult || backtestResult.dates.length === 0) return null;
+    const first = backtestResult.dates[0];
+    const last = backtestResult.dates[backtestResult.dates.length - 1];
+    const gapDays = (new Date(first).getTime() - new Date(period.start).getTime()) / 86_400_000;
+    return gapDays > 25
+      ? `Note: one of your assets has a shorter history, so this backtest only covers ${first} → ${last} (not the full ${period.subtitle}).`
+      : null;
+  }, [backtestResult, period]);
 
   const totalWeight = selectedAssets.reduce((s, a) => s + a.weight, 0);
   const isValid = selectedAssets.length > 0 && totalWeight === 100;
@@ -417,6 +448,21 @@ const CustomPortfolioBuilder = ({ period = DEFAULT_PERIOD }: { period?: TimePeri
         )}
       </AnimatePresence>
 
+      {/* Data error (missing/insufficient data) */}
+      <AnimatePresence>
+        {hasRun && dataError && !backtestResult && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            className="flex items-start gap-2.5 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3"
+          >
+            <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+            <p className="text-sm text-destructive leading-relaxed">{dataError}</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Results */}
       <AnimatePresence>
         {hasRun && backtestResult && (
@@ -425,6 +471,13 @@ const CustomPortfolioBuilder = ({ period = DEFAULT_PERIOD }: { period?: TimePeri
             animate={{ opacity: 1, y: 0 }}
             className="space-y-5"
           >
+            {windowNote && (
+              <div className="flex items-start gap-2.5 rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3">
+                <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+                <p className="text-xs text-muted-foreground leading-relaxed">{windowNote}</p>
+              </div>
+            )}
+
             <MetricsPanel result={backtestResult} />
 
             <StrategyChart
@@ -438,6 +491,8 @@ const CustomPortfolioBuilder = ({ period = DEFAULT_PERIOD }: { period?: TimePeri
             <CustomEvaluation
               result={backtestResult}
               assets={selectedAssets}
+              spy={priceData?.['SPY']}
+              riskFreeAnnual={period.riskFreeAnnual}
             />
 
             {/* Learning takeaway */}
@@ -469,15 +524,15 @@ const CustomPortfolioBuilder = ({ period = DEFAULT_PERIOD }: { period?: TimePeri
 
 // ── Custom Evaluation (Radar + AI) ─────────────────────────────────────────
 
-function CustomEvaluation({ result, assets }: { result: BacktestResult; assets: SelectedAsset[] }) {
+function CustomEvaluation({ result, assets, spy, riskFreeAnnual }: { result: BacktestResult; assets: SelectedAsset[]; spy?: DailyPrice[]; riskFreeAnnual: number }) {
   const [feedback, setFeedback] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const hasFetched = useRef(false);
 
   const radarScores = useMemo(
-    () => computeCustomRadarScores(result, assets, ASSET_UNIVERSE),
-    [result, assets],
+    () => computeCustomRadarScores(result, assets, ASSET_UNIVERSE, spy, riskFreeAnnual),
+    [result, assets, spy, riskFreeAnnual],
   );
 
   const avg = useMemo(
@@ -569,6 +624,9 @@ function CustomEvaluation({ result, assets }: { result: BacktestResult; assets: 
               </div>
             ))}
           </div>
+          <p className="text-[10px] text-muted-foreground mt-2.5 leading-relaxed">
+            <span className="font-medium">Return · Risk · Efficiency</span> are scored vs the market (SPY total return) over the same window; <span className="font-medium">Stability · Diversification · Consistency</span> are absolute. 5 ≈ market-like.
+          </p>
         </motion.div>
 
         {/* AI Feedback */}

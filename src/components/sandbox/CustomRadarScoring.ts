@@ -1,5 +1,7 @@
-// Diversification-aware radar scoring for custom portfolios — benchmark-relative
-import type { BacktestResult } from "@/hooks/useStrategyBacktest";
+// Diversification-aware radar scoring for custom portfolios.
+// Return / Risk / Efficiency are scored RELATIVE TO THE MARKET (SPY total return)
+// over the same date window — not relative to the portfolio's own buy-and-hold.
+import type { BacktestResult, DailyPrice } from "@/hooks/useStrategyBacktest";
 import type { RadarScore } from "./RadarScoring";
 import type { PortfolioAsset } from "@/data/portfolio-assets";
 
@@ -7,61 +9,83 @@ function clamp(v: number, min = 0, max = 10): number {
   return Math.min(max, Math.max(min, v));
 }
 
-function benchmarkMetrics(result: BacktestResult) {
-  const bv = result.benchmarkValues;
-  const n = bv.length;
-  const returns = bv.slice(1).map((p, i) => (p - bv[i]) / bv[i]);
+// Compute CAGR / volatility / max-drawdown / Sharpe from a value series.
+// Same methodology used for the portfolio itself, so comparisons are apples-to-apples.
+function metricsFromValues(values: number[], riskFreeAnnual: number) {
+  const n = values.length;
+  const returns = values.slice(1).map((p, i) => (p - values[i]) / values[i]);
   const avgRet = returns.reduce((a, b) => a + b, 0) / returns.length;
   const variance = returns.reduce((s, r) => s + (r - avgRet) ** 2, 0) / returns.length;
   const vol = Math.sqrt(variance * 252) * 100;
+
   const years = n / 252;
-  const cagr = years > 0 ? (Math.pow(bv[n - 1] / bv[0], 1 / years) - 1) * 100 : 0;
-  let peak = bv[0];
+  const cagr = years > 0 ? (Math.pow(values[n - 1] / values[0], 1 / years) - 1) * 100 : 0;
+
+  let peak = values[0];
   let maxDD = 0;
-  bv.forEach(v => { peak = Math.max(peak, v); maxDD = Math.min(maxDD, ((v - peak) / peak) * 100); });
-  return { cagr, vol, maxDD };
+  values.forEach((v) => {
+    peak = Math.max(peak, v);
+    maxDD = Math.min(maxDD, ((v - peak) / peak) * 100);
+  });
+
+  const dailyRF = riskFreeAnnual / 252;
+  const excess = returns.map((r) => r - dailyRF);
+  const avgExcess = excess.reduce((a, b) => a + b, 0) / excess.length;
+  const excessStd = Math.sqrt(excess.reduce((s, r) => s + (r - avgExcess) ** 2, 0) / excess.length);
+  const sharpe = excessStd > 0 ? (avgExcess * 252) / (excessStd * Math.sqrt(252)) : 0;
+
+  return { cagr, vol, maxDD, sharpe };
 }
 
 export function computeCustomRadarScores(
   result: BacktestResult,
   assets: { ticker: string; weight: number }[],
   assetUniverse: PortfolioAsset[],
+  spyPrices?: DailyPrice[],
+  riskFreeAnnual = 0.02,
 ): RadarScore[] {
-  const bm = benchmarkMetrics(result);
+  // ── Market benchmark = SPY total return over the SAME window as the portfolio ──
+  let market: { cagr: number; vol: number; maxDD: number; sharpe: number };
+  if (spyPrices?.length) {
+    const spyMap = new Map(spyPrices.map((d) => [d.date, d.close]));
+    const spyVals = result.dates
+      .map((d) => spyMap.get(d))
+      .filter((v): v is number => v != null);
+    market = spyVals.length > 20
+      ? metricsFromValues(spyVals, riskFreeAnnual)
+      // Fallback: portfolio's own buy-and-hold line (only if SPY is unavailable)
+      : metricsFromValues(result.benchmarkValues, riskFreeAnnual);
+  } else {
+    market = metricsFromValues(result.benchmarkValues, riskFreeAnnual);
+  }
 
-  // Return: vs SPY CAGR. SPY = 5.
-  const cagrDiff = result.cagr - bm.cagr;
-  const returnScore = clamp(5 + cagrDiff);
+  // Return: portfolio CAGR vs market CAGR (market = 5).
+  const returnScore = clamp(5 + (result.cagr - market.cagr));
 
-  // Risk: vol and drawdown vs SPY
-  const volDiff = bm.vol - result.volatility;
-  const volScore = clamp(5 + volDiff * 0.5);
-  const ddDiff = result.maxDrawdown - bm.maxDD;
-  const ddScore = clamp(5 + ddDiff * 0.2);
+  // Risk: lower volatility & shallower drawdown than the market score above 5.
+  const volScore = clamp(5 + (market.vol - result.volatility) * 0.5);
+  const ddScore = clamp(5 + (result.maxDrawdown - market.maxDD) * 0.2);
   const riskScore = clamp((volScore + ddScore) / 2);
 
-  // Stability: absolute vol level
-  const stabilityScore = clamp(10 - (result.volatility / 3));
+  // Stability: absolute volatility level (lower = steadier).
+  const stabilityScore = clamp(10 - result.volatility / 3);
 
-  // Diversification: sector & asset class variety
+  // Diversification: sector & asset-class variety + a small size bonus.
   const selectedAssets = assets
-    .map(a => assetUniverse.find(u => u.ticker === a.ticker))
+    .map((a) => assetUniverse.find((u) => u.ticker === a.ticker))
     .filter(Boolean) as PortfolioAsset[];
-  const uniqueSectors = new Set(selectedAssets.map(a => a.sector)).size;
-  const uniqueCategories = new Set(selectedAssets.map(a => a.category)).size;
-  const assetCount = assets.length;
+  const uniqueSectors = new Set(selectedAssets.map((a) => a.sector)).size;
+  const uniqueCategories = new Set(selectedAssets.map((a) => a.category)).size;
   const sectorScore = Math.min(uniqueSectors, 4);
   const categoryScore = Math.min(uniqueCategories, 4);
-  const countBonus = Math.min(assetCount - 1, 2);
+  const countBonus = Math.min(assets.length - 1, 2);
   const divScore = clamp(sectorScore + categoryScore + countBonus);
 
-  // Consistency: smoothness of returns
+  // Consistency: smoothness of returns (worst quarter, closer to 0 = steadier).
   const consistencyScore = clamp(10 + result.worstQuarter / 3);
 
-  // Efficiency: Sharpe vs SPY Sharpe approximation
-  const spySharpe = bm.vol > 0 ? (bm.cagr / bm.vol) * 0.7 : 0.5;
-  const sharpeDiff = result.sharpeRatio - spySharpe;
-  const efficiencyScore = clamp(5 + sharpeDiff * 3);
+  // Efficiency: portfolio Sharpe vs market Sharpe — both computed the SAME way.
+  const efficiencyScore = clamp(5 + (result.sharpeRatio - market.sharpe) * 3);
 
   return [
     { dimension: 'Return', score: Math.round(returnScore * 10) / 10, fullMark: 10 },

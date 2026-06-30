@@ -37,16 +37,22 @@ export const XP_REWARDS = {
 
 // ─── BADGES ──────────────────────────────────────────────────────────────────
 
+// The six core strategy modules. Foundations is a separate "module 0" pre-course.
+export const CORE_MODULE_IDS = ['module-1', 'module-2', 'module-3', 'module-4', 'module-5', 'module-6'];
+const coreModulesCompleted = (s: State) =>
+  CORE_MODULE_IDS.filter((id) => s.moduleProgress[id]?.completed).length;
+
 export const BADGES = [
   { id: 'first_concept',  cat: 'Knowledge', icon: '💡', name: 'Lightbulb Moment',  desc: 'Learn your first concept',          xp: 20,  unlock: (s: State) => s.conceptsLearned >= 1 },
   { id: 'concept_10',     cat: 'Knowledge', icon: '📖', name: 'Concept Collector',  desc: 'Learn 10 financial concepts',       xp: 40,  unlock: (s: State) => s.conceptsLearned >= 10 },
   { id: 'concept_all',    cat: 'Knowledge', icon: '🧠', name: 'Encyclopaedia',      desc: 'Learn all 30+ concepts',            xp: 150, unlock: (s: State) => s.conceptsLearned >= 30 },
   { id: 'first_article',  cat: 'Knowledge', icon: '📰', name: 'News Reader',        desc: 'Read your first news article',      xp: 15,  unlock: (s: State) => s.articlesRead >= 1 },
   { id: 'article_10',     cat: 'Knowledge', icon: '🗞️', name: 'Market Watcher',     desc: 'Read 10 news articles',             xp: 35,  unlock: (s: State) => s.articlesRead >= 10 },
-  { id: 'first_module',   cat: 'Strategy',  icon: '🎯', name: 'First Step',         desc: 'Complete your first module',        xp: 30,  unlock: (s: State) => s.modulesCompleted >= 1 },
-  { id: 'halfway',        cat: 'Strategy',  icon: '⚡', name: 'Halfway There',      desc: 'Complete 3 strategy modules',       xp: 60,  unlock: (s: State) => s.modulesCompleted >= 3 },
-  { id: 'all_modules',    cat: 'Strategy',  icon: '🏆', name: 'Strategy Master',    desc: 'Complete all 6 modules',            xp: 250, unlock: (s: State) => s.modulesCompleted >= 6 },
-  { id: 'quiz_ace',       cat: 'Strategy',  icon: '🎯', name: 'Quiz Ace',           desc: 'Get a perfect quiz score',          xp: 50,  unlock: (s: State) => s.perfectQuizzes >= 1 },
+  { id: 'foundations',    cat: 'Strategy',  icon: '🌱', name: 'Grounded',          desc: 'Complete the Foundations module',   xp: 25,  unlock: (s: State) => !!s.moduleProgress['foundations']?.completed },
+  { id: 'first_module',   cat: 'Strategy',  icon: '🎯', name: 'First Step',         desc: 'Complete your first core module',   xp: 30,  unlock: (s: State) => coreModulesCompleted(s) >= 1 },
+  { id: 'halfway',        cat: 'Strategy',  icon: '⚡', name: 'Halfway There',      desc: 'Complete 3 core modules',           xp: 60,  unlock: (s: State) => coreModulesCompleted(s) >= 3 },
+  { id: 'all_modules',    cat: 'Strategy',  icon: '🏆', name: 'Strategy Master',    desc: 'Complete all 6 core modules',       xp: 250, unlock: (s: State) => coreModulesCompleted(s) >= 6 },
+  { id: 'quiz_ace',       cat: 'Strategy',  icon: '🎯', name: 'Quiz Ace',           desc: 'Ace a module knowledge check',      xp: 50,  unlock: (s: State) => s.perfectQuizzes >= 1 },
   { id: 'first_case',     cat: 'Cases',     icon: '🔍', name: 'Case Opened',        desc: 'Study your first case',             xp: 20,  unlock: (s: State) => s.casesStudied >= 1 },
   { id: 'case_5',         cat: 'Cases',     icon: '🕵️', name: 'Case Detective',     desc: 'Study 5 historical cases',          xp: 50,  unlock: (s: State) => s.casesStudied >= 5 },
   { id: 'case_all',       cat: 'Cases',     icon: '🌊', name: 'Market Historian',   desc: 'Study all 30 cases',                xp: 200, unlock: (s: State) => s.casesStudied >= 30 },
@@ -184,7 +190,7 @@ function reducer(state: State, action: Action): State {
       return { ...state, moduleProgress: { ...state.moduleProgress, [action.moduleId]: { ...existing, sectionsRead: [...existing.sectionsRead, action.sectionId] } } };
     }
     case 'COMPLETE_MODULE': {
-      const existing = state.moduleProgress[action.moduleId] ?? { sectionsRead: [], startTime: Date.now() };
+      const existing = state.moduleProgress[action.moduleId] ?? { sectionsRead: [], quizScore: null, completed: false, startTime: Date.now() };
       if (existing.completed) return state;
       const elapsed = (Date.now() - existing.startTime) / 60000;
       const isPerfect = action.quizScore === action.maxScore;

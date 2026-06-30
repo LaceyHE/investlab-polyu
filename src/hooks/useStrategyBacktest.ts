@@ -181,6 +181,38 @@ function backtest6040(spy: DailyPrice[], agg: DailyPrice[], stockPct: number, rf
   return { dates, portfolioValues, benchmarkValues, ...computeMetrics(portfolioValues, rf) };
 }
 
+// ── Optimal-Sharpe scan for the allocation strategy ─────────────────────────
+// Sweeps every stock/bond mix (0–100% stocks) over the chosen period and
+// returns the mix that maximised the (risk-adjusted) Sharpe ratio. Used to show
+// learners that the Sharpe-optimal split is data-dependent and almost never 60/40.
+
+export interface AllocationSharpePoint {
+  stockPct: number; // 0–100
+  sharpe: number;
+}
+
+export interface AllocationSharpeScan {
+  points: AllocationSharpePoint[];
+  bestStockPct: number;
+  bestSharpe: number;
+}
+
+export function scanAllocationSharpe(
+  spy: DailyPrice[],
+  agg: DailyPrice[],
+  rf: number,
+  step = 5,
+): AllocationSharpeScan | null {
+  if (!spy?.length || !agg?.length) return null;
+  const points: AllocationSharpePoint[] = [];
+  for (let pct = 0; pct <= 100; pct += step) {
+    const { sharpeRatio } = backtest6040(spy, agg, pct, rf);
+    points.push({ stockPct: pct, sharpe: sharpeRatio });
+  }
+  const best = points.reduce((a, b) => (b.sharpe > a.sharpe ? b : a), points[0]);
+  return { points, bestStockPct: best.stockPct, bestSharpe: best.sharpe };
+}
+
 // ── Strategy 2: Trend Follower ─────────────────────────────────────────────
 
 function backtestTrend(spy: DailyPrice[], speed: number, rf: number): BacktestResult {

@@ -11,6 +11,8 @@ import Onboarding from "./pages/Onboarding";
 import LearningPath from "./pages/LearningPath";
 import CausalLab from "./pages/CausalLab";
 import FinSignal from "./pages/FinSignal";
+import Foundations from "./pages/Foundations";
+import RequireModule from "@/components/RequireModule";
 import ModuleOne from "./pages/ModuleOne";
 import ModuleTwo from "./pages/ModuleTwo";
 import ModuleThree from "./pages/ModuleThree";
@@ -44,12 +46,13 @@ const App = () => (
               <Route path="/learning-path" element={<LearningPath />} />
               <Route path="/causal-lab" element={<CausalLab />} />
               <Route path="/causal-lab/case/:caseId" element={<CaseDetail />} />
+              <Route path="/foundations" element={<Foundations />} />
               <Route path="/module/1" element={<ModuleOne />} />
-              <Route path="/module/2" element={<ModuleTwo />} />
-              <Route path="/module/3" element={<ModuleThree />} />
-              <Route path="/module/4" element={<ModuleFour />} />
-              <Route path="/module/5" element={<ModuleFive />} />
-              <Route path="/module/6" element={<ModuleSix />} />
+              <Route path="/module/2" element={<RequireModule prev="module-1"><ModuleTwo /></RequireModule>} />
+              <Route path="/module/3" element={<RequireModule prev="module-2"><ModuleThree /></RequireModule>} />
+              <Route path="/module/4" element={<RequireModule prev="module-3"><ModuleFour /></RequireModule>} />
+              <Route path="/module/5" element={<RequireModule prev="module-4"><ModuleFive /></RequireModule>} />
+              <Route path="/module/6" element={<RequireModule prev="module-5"><ModuleSix /></RequireModule>} />
               <Route path="/sandbox" element={<Sandbox />} />
               <Route path="/scenarios" element={<ScenarioSimulator />} />
               <Route path="/account" element={<Account />} />

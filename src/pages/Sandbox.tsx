@@ -14,7 +14,7 @@ import CustomPortfolioBuilder from "@/components/sandbox/CustomPortfolioBuilder"
 import TimePeriodSelector from "@/components/sandbox/TimePeriodSelector";
 import StrategyCompare from "@/components/sandbox/StrategyCompare";
 import HoldingTimeline from "@/components/sandbox/HoldingTimeline";
-import { useMarketPrices, useStrategyBacktest, type StrategyType } from "@/hooks/useStrategyBacktest";
+import { useMarketPrices, useStrategyBacktest, scanAllocationSharpe, type StrategyType } from "@/hooks/useStrategyBacktest";
 import { computeRadarScores } from "@/components/sandbox/RadarScoring";
 import { useUserProgress } from "@/hooks/useUserProgress";
 import { DEFAULT_PERIOD, type TimePeriod } from "@/data/time-periods";
@@ -119,6 +119,15 @@ const Sandbox = () => {
   );
 
   const sliderConfig = selectedStrategy ? sliderConfigs[selectedStrategy] : null;
+
+  // Optimal-Sharpe scan (allocation strategy only) — shows the Sharpe-maximising
+  // stock/bond mix for the chosen period, which is rarely the classic 60/40.
+  const allocSharpe = useMemo(
+    () => selectedStrategy === 'allocation' && marketData?.spy && marketData?.agg
+      ? scanAllocationSharpe(marketData.spy, marketData.agg, period.riskFreeAnnual)
+      : null,
+    [selectedStrategy, marketData, period],
+  );
 
   // Track backtest runs
   useEffect(() => {
@@ -240,18 +249,42 @@ const Sandbox = () => {
                           {sliderConfig.formatValue(currentParam)}
                         </span>
                       </div>
-                      <Slider
-                        value={[currentParam]}
-                        min={0}
-                        max={1}
-                        step={0.01}
-                        onValueChange={handleParamChange}
-                        className="mb-2"
-                      />
+                      <div className="relative">
+                        {/* Optimal-Sharpe marker (allocation only) */}
+                        {allocSharpe && (
+                          <div
+                            className="pointer-events-none absolute -top-5 z-10 flex -translate-x-1/2 flex-col items-center"
+                            style={{ left: `${allocSharpe.bestStockPct}%` }}
+                          >
+                            <span className="whitespace-nowrap text-[10px] font-medium text-teal leading-none mb-0.5">
+                              📍 Best Sharpe
+                            </span>
+                            <span className="h-3 w-px bg-teal" />
+                          </div>
+                        )}
+                        <Slider
+                          value={[currentParam]}
+                          min={0}
+                          max={1}
+                          step={0.01}
+                          onValueChange={handleParamChange}
+                          className="mb-2"
+                        />
+                      </div>
                       <div className="flex justify-between text-[11px] text-muted-foreground">
                         <span>{sliderConfig.leftLabel}</span>
                         <span>{sliderConfig.rightLabel}</span>
                       </div>
+
+                      {/* One-line teaching note */}
+                      {allocSharpe && (
+                        <p className="mt-3 rounded-lg border border-teal/20 bg-teal/5 px-3 py-2 text-xs leading-relaxed text-foreground">
+                          📍 In <span className="font-medium">{period.subtitle}</span>, the Sharpe ratio peaked at{" "}
+                          <span className="font-semibold text-teal">{allocSharpe.bestStockPct}% stocks</span>
+                          {" "}(Sharpe {allocSharpe.bestSharpe.toFixed(2)}) — <span className="font-medium">not</span> the classic 60/40.
+                          The risk-adjusted "best" mix depends on the period; switch the time range above and watch this marker move.
+                        </p>
+                      )}
                     </div>
                   )}
 

@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 import type { ReactNode } from "react";
 
 interface SideModuleCardProps {
@@ -10,8 +11,8 @@ interface SideModuleCardProps {
   to?: string;
 }
 
-const SideModuleCard = ({ title, description, icon, variant, locked = false }: SideModuleCardProps) => {
-  return (
+const SideModuleCard = ({ title, description, icon, variant, locked = false, to }: SideModuleCardProps) => {
+  const card = (
     <motion.div
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
@@ -43,6 +44,9 @@ const SideModuleCard = ({ title, description, icon, variant, locked = false }: S
       </div>
     </motion.div>
   );
+
+  if (!locked && to) return <Link to={to}>{card}</Link>;
+  return card;
 };
 
 export default SideModuleCard;

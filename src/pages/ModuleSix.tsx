@@ -4,11 +4,13 @@ import { ArrowLeft, ChevronRight, Award, Brain, Target, AlertTriangle, Unlock } 
 import { Link } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import { useUserProgress } from "@/hooks/useUserProgress";
+import { useGamification } from "@/contexts/GamificationContext";
 
 const ModuleSix = () => {
   const [reflectionAnswer, setReflectionAnswer] = useState("");
   const [completed, setCompleted] = useState(false);
   const { markComplete } = useUserProgress();
+  const { completeModule } = useGamification();
   const tracked = useRef(false);
 
   useEffect(() => {
@@ -117,7 +119,7 @@ const ModuleSix = () => {
             placeholder="Take a moment to reflect..."
           />
           <button
-            onClick={() => { setCompleted(true); markComplete("module_complete", "module-6"); }}
+            onClick={() => { setCompleted(true); (markComplete("module_complete", "module-6"), completeModule("module-6")); }}
             disabled={!reflectionAnswer.trim()}
             className="rounded-xl bg-gradient-warm px-6 py-3 text-sm font-semibold text-primary-foreground disabled:opacity-40"
           >
