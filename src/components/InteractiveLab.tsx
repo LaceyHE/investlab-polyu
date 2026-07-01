@@ -3,9 +3,10 @@ import { Sparkles, Loader2, RotateCcw, Send, CheckCircle2, XCircle } from 'lucid
 import { chatAI, type AIMessage } from '@/lib/ai';
 
 interface Prediction {
-  ticker: string;
+  asset: string;
   question: string;
-  actual: 'up' | 'down' | 'flat';
+  correctAnswer: 'up' | 'down' | 'flat';
+  actualOutcome: string;
   explanation: string;
 }
 
@@ -32,7 +33,7 @@ export default function InteractiveLab({ caseData }: { caseData: CaseForLab }) {
 function PredictionMode({ predictions }: { predictions: Prediction[] }) {
   const [answers, setAnswers] = useState<Record<number, 'up' | 'down' | 'flat'>>({});
   const [submitted, setSubmitted] = useState(false);
-  const score = predictions.filter((p, i) => answers[i] === p.actual).length;
+  const score = predictions.filter((p, i) => answers[i] === p.correctAnswer).length;
 
   return (
     <section className="rounded-2xl border-2 border-blue-200 bg-blue-50/50 p-6">
@@ -45,7 +46,7 @@ function PredictionMode({ predictions }: { predictions: Prediction[] }) {
         {predictions.map((p, i) => (
           <div key={i} className="rounded-lg bg-white p-4 shadow-sm">
             <div className="mb-2 font-medium">
-              <span className="mr-2 rounded bg-slate-100 px-2 py-0.5 text-xs">{p.ticker}</span>
+              <span className="mr-2 rounded bg-slate-100 px-2 py-0.5 text-xs">{p.asset}</span>
               {p.question}
             </div>
             <div className="flex gap-2">
@@ -63,10 +64,10 @@ function PredictionMode({ predictions }: { predictions: Prediction[] }) {
             {submitted && (
               <div className="mt-3 rounded-lg bg-slate-50 p-3 text-sm">
                 <div className="mb-1 flex items-center gap-2 font-medium">
-                  {answers[i] === p.actual ? (
+                  {answers[i] === p.correctAnswer ? (
                     <><CheckCircle2 className="h-4 w-4 text-green-600" /> Correct!</>
                   ) : (
-                    <><XCircle className="h-4 w-4 text-red-600" /> Actual: {p.actual}</>
+                    <><XCircle className="h-4 w-4 text-red-600" /> Actual: {p.actualOutcome}</>
                   )}
                 </div>
                 <p className="text-slate-600">{p.explanation}</p>
