@@ -434,7 +434,6 @@ export default function FinSignal() {
   const [isLive, setIsLive] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [avKey, setAvKey] = useState(import.meta.env.VITE_ALPHAVANTAGE_KEY || '');
   const [selectedConcept, setSelectedConcept] = useState(null);
   const [view, setView] = useState('news');
   const [llmResults, setLlmResults] = useState({});
@@ -442,17 +441,16 @@ export default function FinSignal() {
   const [expandedArticle, setExpandedArticle] = useState(null);
   const [searchTopic, setSearchTopic] = useState('');
 
-  /* ── Fetch Real News ── */
+  /* ── Fetch Real News (via secure market-data edge function) ── */
   const fetchNews = useCallback(async () => {
-    if (!avKey.trim()) { setError('Please enter your Alpha Vantage API key in Settings'); return; }
     setLoading(true); setError('');
     try {
-      const topicParam = searchTopic.trim() ? `&topics=${encodeURIComponent(searchTopic.trim())}` : '';
-      const url = `https://www.alphavantage.co/query?function=NEWS_SENTIMENT${topicParam}&apikey=${avKey.trim()}&limit=20`;
-      const res = await fetch(url);
-      const data = await res.json();
-      if (data.Information) { setError('API limit reached. Try again in 1 minute.'); setLoading(false); return; }
-      if (!data.feed || data.feed.length === 0) { setError('No articles returned. Try a different topic.'); setLoading(false); return; }
+      const { data, error: fnError } = await supabase.functions.invoke('market-data', {
+        body: { type: 'news', topics: searchTopic.trim() || undefined },
+      });
+      if (fnError) { setError(`Failed to fetch news: ${fnError.message}`); setLoading(false); return; }
+      if (data?.Information) { setError('API limit reached. Try again in 1 minute.'); setLoading(false); return; }
+      if (!data?.feed || data.feed.length === 0) { setError('No articles returned. Try a different topic.'); setLoading(false); return; }
       const mapped = data.feed.map(a => ({
         title: a.title,
         summary: a.summary,
@@ -467,18 +465,14 @@ export default function FinSignal() {
       setIsLive(true);
       setLlmResults({});
     } catch (e) {
-      setError('Failed to fetch news. Check your API key and connection.');
+      setError('Failed to fetch news. Please try again.');
     }
     setLoading(false);
-  }, [avKey, searchTopic]);
+  }, [searchTopic]);
 
-  /* ── Auto-fetch latest news on page load (only when a real API key is set) ── */
+  /* ── Auto-fetch latest news on page load ── */
   useEffect(() => {
-    const key = avKey.trim();
-    const isPlaceholder = !key || key === '你的alpha_vantage_key' || key.toLowerCase().includes('your');
-    if (!isPlaceholder) {
-      fetchNews();
-    }
+    fetchNews();
     // run once on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
