@@ -4,8 +4,40 @@ import { ArrowLeft, ArrowRight, ChevronRight, PieChart, Activity, TrendingDown, 
 import { Link } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import { useUserProgress } from "@/hooks/useUserProgress";
+import { useGamification } from "@/contexts/GamificationContext";
+import KnowledgeCheck, { type QuizQuestion } from "@/components/KnowledgeCheck";
 
 type EnvToggle = "trending" | "shock" | "neutral";
+
+const quiz: QuizQuestion[] = [
+  {
+    q: "When the market enters a Shock / Crisis, which holdings absorb the full drawdown?",
+    options: [
+      "Trend-following positions — they ride it all the way down",
+      "Buy & Hold positions — they don't exit, so they take the hit",
+      "Mean reversion positions — they always catch the exact bottom",
+    ],
+    correct: 1,
+  },
+  {
+    q: "This module reframes how you see your portfolio. You're not holding 6 stocks — you're holding a…",
+    options: [
+      "volatility profile and a risk exposure",
+      "guaranteed annual return",
+      "single concentrated bet on technology",
+    ],
+    correct: 0,
+  },
+  {
+    q: "Switching from a Normal to a Shock environment, your portfolio's volatility…",
+    options: [
+      "stays about the same",
+      "falls, because crises are calm periods",
+      "rises sharply (here, from ~12% to ~31%)",
+    ],
+    correct: 2,
+  },
+];
 
 const holdings = [
   { ticker: "AAPL", strategy: "Trend Following", allocation: 22 },
@@ -36,9 +68,18 @@ const envImpact: Record<EnvToggle, { volatility: string; drawdown: string; note:
 
 const ModuleFive = () => {
   const [env, setEnv] = useState<EnvToggle>("neutral");
-  const [reflectionSubmitted, setReflectionSubmitted] = useState(false);
+  const [exploredEnvs, setExploredEnvs] = useState<EnvToggle[]>(["neutral"]);
+  const [quizPassed, setQuizPassed] = useState(false);
   const { markComplete } = useUserProgress();
+  const { completeModule } = useGamification();
   const tracked = useRef(false);
+
+  const selectEnv = (id: EnvToggle) => {
+    setEnv(id);
+    setExploredEnvs((prev) => (prev.includes(id) ? prev : [...prev, id]));
+  };
+  const allEnvsSeen = exploredEnvs.length === 3;
+  const canContinue = allEnvsSeen && quizPassed;
 
   useEffect(() => {
     if (!tracked.current) {
@@ -154,7 +195,7 @@ const ModuleFive = () => {
             {([["neutral", "Normal"], ["trending", "Trending"], ["shock", "Shock / Crisis"]] as const).map(([id, label]) => (
               <button
                 key={id}
-                onClick={() => setEnv(id)}
+                onClick={() => selectEnv(id)}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   env === id ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground"
                 }`}
@@ -168,18 +209,15 @@ const ModuleFive = () => {
           </motion.p>
         </div>
 
-        {/* Reflection gate */}
-        {!reflectionSubmitted ? (
-          <div className="rounded-xl border border-border bg-gradient-card p-6 text-center">
-            <p className="text-muted-foreground mb-4">To unlock Module 6, submit your portfolio reflection.</p>
-            <button
-              onClick={() => setReflectionSubmitted(true)}
-              className="rounded-xl bg-gradient-warm px-6 py-3 text-sm font-semibold text-primary-foreground"
-            >
-              Submit Reflection & Continue
-            </button>
-          </div>
-        ) : null}
+        {/* Knowledge Check */}
+        <div className="mb-10">
+          <KnowledgeCheck
+            questions={quiz}
+            locked={!allEnvsSeen}
+            lockedHint={`👆 Cycle through all three environments (Normal · Trending · Shock) to see how your portfolio behaves — then the knowledge check unlocks. ${exploredEnvs.length}/3 seen.`}
+            onResult={({ allCorrect }) => setQuizPassed(allCorrect)}
+          />
+        </div>
 
         {/* Navigation */}
         <div className="flex items-center justify-between border-t border-border pt-8 mt-12">
@@ -189,9 +227,9 @@ const ModuleFive = () => {
           <Link
             to="/module/6"
             className={`group inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold transition-all ${
-              reflectionSubmitted ? "bg-gradient-warm text-primary-foreground" : "bg-secondary text-muted-foreground cursor-not-allowed"
+              canContinue ? "bg-gradient-warm text-primary-foreground" : "bg-secondary text-muted-foreground cursor-not-allowed"
             }`}
-            onClick={(e) => { if (!reflectionSubmitted) { e.preventDefault(); } else { markComplete("module_complete", "module-5"); } }}
+            onClick={(e) => { if (!canContinue) { e.preventDefault(); } else { (markComplete("module_complete", "module-5"), completeModule("module-5", 5, 5)); } }}
           >
             Continue to Module 6 <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
           </Link>

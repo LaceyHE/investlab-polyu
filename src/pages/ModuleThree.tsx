@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, ArrowRight, ChevronRight, Eye } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronRight, Eye, CheckCircle2, Star } from "lucide-react";
 import { Link } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
-import ProgressBar from "@/components/ProgressBar";
 import { useUserProgress } from "@/hooks/useUserProgress";
+import { useGamification } from "@/contexts/GamificationContext";
+import KnowledgeCheck, { type QuizQuestion } from "@/components/KnowledgeCheck";
 
 type Universe = "sp500" | "nasdaq100";
 type StrategyLens = "trendfollower" | "meanreversion" | "buyhold";
@@ -83,11 +84,58 @@ const getLensNote = (lens: StrategyLens, label: string, type: "volatility"): str
   return lensInterpretations[lens][label] ?? label;
 };
 
+// One-line summary of what each strategy is hunting for.
+const lensSummary: Record<StrategyLens, string> = {
+  trendfollower: "strong, persistent uptrends it can ride",
+  meanreversion: "beaten-down names trading at a deep discount",
+  buyhold: "stable, low-volatility quality it can hold for years",
+};
+
+// Which stocks are the best fit for the active lens — drives the ★ highlight.
+const isTopPick = (stock: StockCard, lens: StrategyLens): boolean => {
+  if (lens === "trendfollower") return stock.trend === "Strong" && stock.drawdown !== "Deep Drawdown";
+  if (lens === "meanreversion") return stock.drawdown === "Deep Drawdown";
+  if (lens === "buyhold") return stock.drawdown === "Stable" && stock.volatility === "Low";
+  return false;
+};
+
+const quiz: QuizQuestion[] = [
+  {
+    q: "A stock is tagged 'Deep Drawdown' — far below its usual price. Which lens sees this as the BEST opportunity?",
+    options: [
+      "Trend Follower — momentum is clearly negative",
+      "Mean Reversion — a deep discount likely to snap back",
+      "Buy & Hold — drawdowns should always be avoided",
+    ],
+    correct: 1,
+  },
+  {
+    q: "A Trend Follower is most attracted to a stock showing…",
+    options: [
+      "Strong trend strength with clean upward momentum",
+      "A deep drawdown far below its historical average",
+      "A flat, low-volatility price that barely moves",
+    ],
+    correct: 0,
+  },
+  {
+    q: "Why does the very same stock get opposite labels depending on the lens?",
+    options: [
+      "Because the underlying data is unreliable",
+      "Because newer companies are inherently riskier",
+      "Because each strategy cares about completely different signals",
+    ],
+    correct: 2,
+  },
+];
+
 const ModuleThree = () => {
   const [universe, setUniverse] = useState<Universe>("sp500");
   const [lens, setLens] = useState<StrategyLens>("trendfollower");
-  const [viewed, setViewed] = useState(false);
+  const [viewedLenses, setViewedLenses] = useState<StrategyLens[]>(["trendfollower"]);
+  const [quizPassed, setQuizPassed] = useState(false);
   const { markComplete } = useUserProgress();
+  const { completeModule } = useGamification();
   const tracked = useRef(false);
 
   useEffect(() => {
@@ -98,7 +146,14 @@ const ModuleThree = () => {
     }
   }, [markComplete]);
 
+  const selectLens = (l: StrategyLens) => {
+    setLens(l);
+    setViewedLenses((prev) => (prev.includes(l) ? prev : [...prev, l]));
+  };
+
   const stocks = universe === "sp500" ? sp500Stocks : nasdaq100Stocks;
+  const allLensesSeen = viewedLenses.length === 3;
+  const topPicks = stocks.filter((s) => isTopPick(s, lens));
 
   const badgeColor = (val: string) => {
     if (["Strong", "High", "Deep Drawdown"].includes(val)) return "bg-primary/15 text-primary";
@@ -139,20 +194,45 @@ const ModuleThree = () => {
         </div>
 
         {/* Strategy lens toggle */}
-        <div className="flex items-center gap-2 mb-8">
+        <div className="flex items-center gap-2 mb-4 flex-wrap">
           <Eye className="h-4 w-4 text-muted-foreground" />
           <span className="text-sm text-muted-foreground mr-2">View as:</span>
           {(Object.keys(lensLabels) as StrategyLens[]).map((l) => (
             <button
               key={l}
-              onClick={() => { setLens(l); setViewed(true); }}
+              onClick={() => selectLens(l)}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                 lens === l ? "bg-teal/15 text-teal" : "text-muted-foreground hover:text-foreground"
               }`}
             >
               {lensLabels[l]}
+              {viewedLenses.includes(l) && <CheckCircle2 className="h-3 w-3 inline ml-1 text-teal" />}
             </button>
           ))}
+        </div>
+
+        {/* Lens insight + next-step guidance */}
+        <div className="rounded-xl border border-teal/20 bg-teal/5 p-4 mb-8">
+          <p className="text-sm text-foreground leading-relaxed">
+            <span className="font-medium text-teal">{lensLabels[lens]}</span> hunts for {lensSummary[lens]}.
+            {topPicks.length > 0 ? (
+              <> Cards marked <span className="text-warm font-medium">★ Top pick</span> are its best fits here — <span className="font-medium text-foreground">{topPicks.map((s) => s.ticker).join(", ")}</span>.</>
+            ) : (
+              <> No stock in this pool is a clean fit for it right now — that itself is a signal.</>
+            )}
+          </p>
+          <div className="mt-3 flex items-start gap-2 text-xs text-muted-foreground border-t border-teal/15 pt-3">
+            <ArrowRight className="h-3.5 w-3.5 shrink-0 mt-0.5 text-teal" />
+            {!allLensesSeen ? (
+              <span>
+                <span className="font-medium text-foreground">Next step:</span> switch to the other lenses ({viewedLenses.length}/3 seen) and watch the ★ highlights jump to completely different stocks.
+              </span>
+            ) : (
+              <span>
+                <span className="font-medium text-foreground">Nice — you've seen all three lenses.</span> Notice the same stock is a "top pick" for one strategy and a "stay away" for another. Next: scroll down and take the knowledge check to unlock Module 4.
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Stock cards */}
@@ -164,19 +244,28 @@ const ModuleThree = () => {
             exit={{ opacity: 0 }}
             className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
           >
-            {stocks.map((stock, i) => (
+            {stocks.map((stock, i) => {
+              const pick = isTopPick(stock, lens);
+              return (
               <motion.div
                 key={stock.ticker}
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05 }}
-                className="rounded-xl border border-border bg-gradient-card p-5"
+                className={`rounded-xl border p-5 transition-all ${
+                  pick ? "border-warm/50 bg-warm/5 shadow-md shadow-warm/10" : "border-border bg-gradient-card opacity-80"
+                }`}
               >
                 <div className="flex items-center justify-between mb-3">
                   <div>
                     <span className="font-mono text-sm text-foreground font-medium">{stock.ticker}</span>
                     <p className="text-xs text-muted-foreground">{stock.name}</p>
                   </div>
+                  {pick && (
+                    <span className="flex items-center gap-1 text-xs font-medium text-warm bg-warm/10 px-2 py-0.5 rounded-full shrink-0">
+                      <Star className="h-3 w-3 fill-warm" /> Top pick
+                    </span>
+                  )}
                 </div>
                 <div className="space-y-2">
                   {([
@@ -197,9 +286,20 @@ const ModuleThree = () => {
                   ))}
                 </div>
               </motion.div>
-            ))}
+              );
+            })}
           </motion.div>
         </AnimatePresence>
+
+        {/* Knowledge Check */}
+        <div className="mt-12">
+          <KnowledgeCheck
+            questions={quiz}
+            locked={!allLensesSeen}
+            lockedHint={`👆 View all three strategy lenses to see how the same stocks get re-labelled — then the knowledge check unlocks. ${viewedLenses.length}/3 seen.`}
+            onResult={({ allCorrect }) => setQuizPassed(allCorrect)}
+          />
+        </div>
 
         {/* Navigation */}
         <div className="flex items-center justify-between border-t border-border pt-8 mt-12">
@@ -209,9 +309,9 @@ const ModuleThree = () => {
           <Link
             to="/module/4"
             className={`group inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold transition-all ${
-              viewed ? "bg-gradient-warm text-primary-foreground" : "bg-secondary text-muted-foreground cursor-not-allowed"
+              allLensesSeen && quizPassed ? "bg-gradient-warm text-primary-foreground" : "bg-secondary text-muted-foreground cursor-not-allowed"
             }`}
-            onClick={(e) => { if (!viewed) { e.preventDefault(); } else { markComplete("module_complete", "module-3"); } }}
+            onClick={(e) => { if (!(allLensesSeen && quizPassed)) { e.preventDefault(); } else { (markComplete("module_complete", "module-3"), completeModule("module-3", 5, 5)); } }}
           >
             Continue to Module 4
             <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />

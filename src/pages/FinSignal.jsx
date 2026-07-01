@@ -472,6 +472,17 @@ export default function FinSignal() {
     setLoading(false);
   }, [avKey, searchTopic]);
 
+  /* ── Auto-fetch latest news on page load (only when a real API key is set) ── */
+  useEffect(() => {
+    const key = avKey.trim();
+    const isPlaceholder = !key || key === '你的alpha_vantage_key' || key.toLowerCase().includes('your');
+    if (!isPlaceholder) {
+      fetchNews();
+    }
+    // run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   /* ── LLM Analysis ── */
   const analyzeLLM = useCallback(async (index) => {
     if (llmResults[index]) { setExpandedArticle(expandedArticle === index ? null : index); return; }

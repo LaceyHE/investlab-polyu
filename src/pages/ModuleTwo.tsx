@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import ProgressBar from "@/components/ProgressBar";
 import { useUserProgress } from "@/hooks/useUserProgress";
+import { useGamification } from "@/contexts/GamificationContext";
 
 type Environment = "trending" | "sideways" | "crisis";
 type Strategy = "buyhold" | "trendfollowing" | "meanreversion";
@@ -79,6 +80,7 @@ const ModuleTwo = () => {
   const [exerciseStrategy, setExerciseStrategy] = useState<Strategy | null>(null);
   const [exerciseEnv, setExerciseEnv] = useState<Environment | null>(null);
   const { markComplete } = useUserProgress();
+  const { completeModule } = useGamification();
   const tracked = useRef(false);
 
   useEffect(() => {
@@ -317,7 +319,7 @@ const ModuleTwo = () => {
                 ? "bg-gradient-warm text-primary-foreground hover:shadow-lg hover:shadow-primary/20"
                 : "bg-secondary text-muted-foreground cursor-not-allowed"
             }`}
-            onClick={(e) => { if (completedSections.length < 3) { e.preventDefault(); } else { markComplete("module_complete", "module-2"); } }}
+            onClick={(e) => { if (completedSections.length < 3) { e.preventDefault(); } else { (markComplete("module_complete", "module-2"), completeModule("module-2")); } }}
           >
             Continue to Module 3
             <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />

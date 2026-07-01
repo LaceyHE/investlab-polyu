@@ -1,76 +1,16 @@
-// Custom portfolio backtest hook — fetches multi-ticker data, computes weighted portfolio
-import { useMemo } from "react";
+// Custom portfolio backtest hook — uses static JSON price data
 import { useQuery } from "@tanstack/react-query";
 import type { DailyPrice, BacktestResult } from "./useStrategyBacktest";
+import type { TimePeriod } from "@/data/time-periods";
+import { DEFAULT_PERIOD } from "@/data/time-periods";
 
-const START = '2021-01-01';
-const END = '2023-01-01';
 const INITIAL_CAPITAL = 10000;
-const RISK_FREE = 0.02 / 252;
 
-// ── Fetch / Fallback ───────────────────────────────────────────────────────
+// ── Static Data Loading ────────────────────────────────────────────────────
 
-async function fetchTickerData(ticker: string): Promise<DailyPrice[]> {
-  const p1 = Math.floor(new Date(START).getTime() / 1000);
-  const p2 = Math.floor(new Date(END).getTime() / 1000);
-  try {
-    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?period1=${p1}&period2=${p2}&interval=1d`;
-    const resp = await fetch(url);
-    if (!resp.ok) throw new Error('API error');
-    const json = await resp.json();
-    const result = json.chart.result[0];
-    const ts = result.timestamp;
-    const closes = result.indicators.quote[0].close;
-    return ts.map((t: number, i: number) => ({
-      date: new Date(t * 1000).toISOString().split('T')[0],
-      close: closes[i] ?? 0,
-    })).filter((d: DailyPrice) => d.close > 0);
-  } catch {
-    return generateFallback(ticker);
-  }
-}
-
-// Deterministic fallback per ticker
-function generateFallback(ticker: string): DailyPrice[] {
-  const points: DailyPrice[] = [];
-  const start = new Date(START);
-  const end = new Date(END);
-
-  // Seed from ticker for determinism
-  let seed = 0;
-  for (let i = 0; i < ticker.length; i++) seed += ticker.charCodeAt(i) * (i + 1) * 137;
-  const rand = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
-
-  // Base prices & characteristics by ticker
-  const configs: Record<string, { base: number; drift2021: number; drift2022: number; vol: number }> = {
-    AAPL: { base: 130, drift2021: 0.0008, drift2022: -0.0003, vol: 0.018 },
-    MSFT: { base: 220, drift2021: 0.0009, drift2022: -0.0002, vol: 0.016 },
-    JPM:  { base: 130, drift2021: 0.0007, drift2022: -0.0004, vol: 0.017 },
-    JNJ:  { base: 165, drift2021: 0.0003, drift2022: -0.0001, vol: 0.010 },
-    PG:   { base: 135, drift2021: 0.0004, drift2022: 0.0001, vol: 0.009 },
-    KO:   { base: 50,  drift2021: 0.0003, drift2022: 0.0000, vol: 0.009 },
-    XOM:  { base: 42,  drift2021: 0.0006, drift2022: 0.0010, vol: 0.020 },
-    CAT:  { base: 190, drift2021: 0.0005, drift2022: 0.0002, vol: 0.016 },
-    SPY:  { base: 380, drift2021: 0.0006, drift2022: -0.0004, vol: 0.012 },
-    QQQ:  { base: 310, drift2021: 0.0008, drift2022: -0.0006, vol: 0.016 },
-    AGG:  { base: 115, drift2021: -0.0001, drift2022: -0.0003, vol: 0.004 },
-    GLD:  { base: 170, drift2021: -0.0002, drift2022: 0.0001, vol: 0.008 },
-  };
-
-  const cfg = configs[ticker] || { base: 100, drift2021: 0.0003, drift2022: -0.0002, vol: 0.015 };
-  let price = cfg.base;
-
-  const cur = new Date(start);
-  while (cur <= end) {
-    if (cur.getDay() !== 0 && cur.getDay() !== 6) {
-      const drift = cur.getFullYear() === 2022 ? cfg.drift2022 : cfg.drift2021;
-      price *= 1 + drift + (rand() - 0.5) * cfg.vol * 2;
-      price = Math.max(price, cfg.base * 0.5);
-      points.push({ date: cur.toISOString().split('T')[0], close: price });
-    }
-    cur.setDate(cur.getDate() + 1);
-  }
-  return points;
+async function loadPeriodData(periodKey: string): Promise<Record<string, DailyPrice[]>> {
+  const mod = await import(`../data/prices/${periodKey}.json`);
+  return mod.default as Record<string, DailyPrice[]>;
 }
 
 // ── Data Hook ──────────────────────────────────────────────────────────────
@@ -80,90 +20,106 @@ export interface SelectedAsset {
   weight: number; // 0-100
 }
 
-export function useMultiTickerData(tickers: string[]) {
+export function useMultiTickerData(tickers: string[], period: TimePeriod = DEFAULT_PERIOD) {
   return useQuery({
-    queryKey: ['custom-portfolio-data', ...tickers.sort()],
-    queryFn: async () => {
-      const results = await Promise.all(tickers.map(fetchTickerData));
-      const map: Record<string, DailyPrice[]> = {};
-      tickers.forEach((t, i) => { map[t] = results[i]; });
-      return map;
-    },
+    queryKey: ['custom-portfolio-data', period.key],
+    // Load the entire period JSON once — all 22 tickers cached together.
+    // This avoids stale cache hits when the user adds a new ticker mid-session.
+    queryFn: () => loadPeriodData(period.key),
     enabled: tickers.length > 0,
-    staleTime: 1000 * 60 * 60,
-    gcTime: 1000 * 60 * 60 * 24,
-    retry: 1,
+    staleTime: Infinity,
+    gcTime: Infinity,
   });
 }
 
 // ── Backtest Engine ────────────────────────────────────────────────────────
 
+export type RebalanceFrequency = 'none' | 'monthly' | 'quarterly' | 'annual';
+
 export function computeCustomBacktest(
   assets: SelectedAsset[],
   priceData: Record<string, DailyPrice[]>,
+  riskFreeAnnual = 0.02,
+  rebalanceFreq: RebalanceFrequency = 'monthly',
 ): BacktestResult | null {
   if (assets.length === 0) return null;
 
-  // Build date-aligned price maps
   const tickerMaps = assets.map(a => {
     const map = new Map<string, number>();
     (priceData[a.ticker] || []).forEach(d => map.set(d.date, d.close));
     return { ticker: a.ticker, weight: a.weight / 100, map };
   });
 
-  // Get SPY for benchmark
-  const spyData = priceData['SPY'] || [];
-  const spyMap = new Map<string, number>();
-  spyData.forEach(d => spyMap.set(d.date, d.close));
-
-  // Find common dates (all tickers + SPY must have data)
+  // Build date set from selected tickers only (priceData may contain all 22 tickers)
   const allDates = new Set<string>();
-  Object.values(priceData).forEach(prices => prices.forEach(d => allDates.add(d.date)));
+  tickerMaps.forEach(tm => tm.map.forEach((_, date) => allDates.add(date)));
   const commonDates = Array.from(allDates)
-    .filter(date => {
-      if (!spyMap.has(date)) return false;
-      return tickerMaps.every(tm => tm.map.has(date));
-    })
+    .filter(date => tickerMaps.every(tm => tm.map.has(date)))
     .sort();
 
   if (commonDates.length < 20) return null;
 
-  // Compute portfolio with monthly rebalancing
+  const startDate = commonDates[0];
+
+  // Strategy: rebalance at chosen frequency
   let portfolioValue = INITIAL_CAPITAL;
-  // Track shares per asset
   let shares = tickerMaps.map(tm => ({
     ticker: tm.ticker,
-    shares: (INITIAL_CAPITAL * tm.weight) / tm.map.get(commonDates[0])!,
+    shares: (INITIAL_CAPITAL * tm.weight) / tm.map.get(startDate)!,
+  }));
+
+  // Benchmark: same initial weights, buy-and-hold (never rebalanced)
+  const bmShares = tickerMaps.map(tm => ({
+    shares: (INITIAL_CAPITAL * tm.weight) / tm.map.get(startDate)!,
   }));
 
   const portfolioValues: number[] = [];
   const benchmarkValues: number[] = [];
   const dates: string[] = [];
-  const spyStart = spyMap.get(commonDates[0])!;
+
   let lastRebalanceMonth = -1;
+  let lastRebalanceQuarter = -1;
+  let lastRebalanceYear = -1;
+
+  const shouldRebalance = (date: string, i: number): boolean => {
+    if (rebalanceFreq === 'none' || i === 0) return false;
+    const d = new Date(date);
+    const month = d.getMonth();
+    const quarter = Math.floor(month / 3);
+    const year = d.getFullYear();
+    if (rebalanceFreq === 'monthly' && month !== lastRebalanceMonth) return true;
+    if (rebalanceFreq === 'quarterly' && quarter !== lastRebalanceQuarter) return true;
+    if (rebalanceFreq === 'annual' && year !== lastRebalanceYear) return true;
+    return false;
+  };
 
   commonDates.forEach((date, i) => {
-    // Current portfolio value
     portfolioValue = shares.reduce((sum, s, idx) => {
       return sum + s.shares * tickerMaps[idx].map.get(date)!;
     }, 0);
 
-    // Monthly rebalance
-    const month = new Date(date).getMonth();
-    if (i > 0 && month !== lastRebalanceMonth) {
+    if (shouldRebalance(date, i)) {
       shares = tickerMaps.map(tm => ({
         ticker: tm.ticker,
         shares: (portfolioValue * tm.weight) / tm.map.get(date)!,
       }));
     }
-    lastRebalanceMonth = month;
+
+    const d = new Date(date);
+    lastRebalanceMonth   = d.getMonth();
+    lastRebalanceQuarter = Math.floor(d.getMonth() / 3);
+    lastRebalanceYear    = d.getFullYear();
+
+    // Benchmark: same weights, buy-and-hold
+    const bmVal = bmShares.reduce((sum, s, idx) => {
+      return sum + s.shares * tickerMaps[idx].map.get(date)!;
+    }, 0);
 
     portfolioValues.push(portfolioValue);
-    benchmarkValues.push((INITIAL_CAPITAL / spyStart) * spyMap.get(date)!);
+    benchmarkValues.push(bmVal);
     dates.push(date);
   });
 
-  // Compute metrics
   const n = portfolioValues.length;
   const totalReturn = ((portfolioValues[n - 1] - portfolioValues[0]) / portfolioValues[0]) * 100;
   const years = n / 252;
@@ -174,7 +130,8 @@ export function computeCustomBacktest(
   const variance = returns.reduce((s, r) => s + (r - avgRet) ** 2, 0) / returns.length;
   const volatility = Math.sqrt(variance * 252) * 100;
 
-  const excessReturns = returns.map(r => r - RISK_FREE);
+  const dailyRF = riskFreeAnnual / 252;
+  const excessReturns = returns.map(r => r - dailyRF);
   const avgExcess = excessReturns.reduce((a, b) => a + b, 0) / excessReturns.length;
   const excessStd = Math.sqrt(excessReturns.reduce((s, r) => s + (r - avgExcess) ** 2, 0) / excessReturns.length);
   const sharpeRatio = excessStd > 0 ? (avgExcess * 252) / (excessStd * Math.sqrt(252)) : 0;
@@ -193,15 +150,5 @@ export function computeCustomBacktest(
     worstQuarter = Math.min(worstQuarter, qRet);
   }
 
-  return {
-    dates,
-    portfolioValues,
-    benchmarkValues,
-    totalReturn,
-    cagr,
-    volatility,
-    maxDrawdown,
-    worstQuarter,
-    sharpeRatio,
-  };
+  return { dates, portfolioValues, benchmarkValues, totalReturn, cagr, volatility, maxDrawdown, worstQuarter, sharpeRatio };
 }
