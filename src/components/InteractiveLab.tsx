@@ -40,9 +40,7 @@ export default function InteractiveLab({ caseData }: { caseData: CaseForLab }) {
       {caseData.predictions && caseData.predictions.length > 0 && (
         <PredictionMode predictions={caseData.predictions} />
       )}
-      {caseData.counterfactuals && caseData.counterfactuals.length > 0 && (
-        <WhatIfSimulator caseData={caseData} />
-      )}
+      <WhatIfSimulator caseData={caseData} />
       <SocraticChat caseData={caseData} />
     </div>
   );
@@ -152,13 +150,54 @@ function PredictionMode({ predictions }: { predictions: Prediction[] }) {
   );
 }
 
-// ============ FEATURE 2: WHAT-IF SIMULATOR ============
+// ============ FEATURE 2: WHAT-IF SIMULATOR (AI-generated scenarios) ============
 
 function WhatIfSimulator({ caseData }: { caseData: CaseForLab }) {
+  const [scenarios, setScenarios] = useState<string[]>(caseData.counterfactuals || []);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(false);
+  const [loadingScenarios, setLoadingScenarios] = useState(false);
   const [result, setResult] = useState('');
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (scenarios.length === 0) {
+      generateScenarios();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const generateScenarios = async () => {
+    setLoadingScenarios(true);
+    setError('');
+    try {
+      const response = await chatAI([
+        {
+          role: 'system',
+          content:
+            'You generate counterfactual scenarios for financial history cases. Output EXACTLY 3 scenarios, one per line, no numbering, no bullets. Each scenario should be a concise "What if [specific historical variable had been different]" statement. Focus on plausible alternate policy choices, corporate decisions, or macro conditions relevant to the case. Keep each under 15 words.',
+        },
+        {
+          role: 'user',
+          content: `Case: ${caseData.title}\n\nBackground: ${caseData.background}\n\nGenerate 3 counterfactual scenarios.`,
+        },
+      ]);
+      const lines = response
+        .split('\n')
+        .map((l) => l.trim())
+        .filter((l) => l.length > 0 && !l.match(/^[0-9\-\*•]/))
+        .slice(0, 3);
+      setScenarios(
+        lines.length >= 3
+          ? lines
+          : response.split('\n').filter((l) => l.trim()).slice(0, 3)
+      );
+    } catch (e: any) {
+      setError(e.message || 'Failed to generate scenarios.');
+    } finally {
+      setLoadingScenarios(false);
+    }
+  };
 
   const toggle = (i: number) => {
     const next = new Set(selected);
@@ -171,7 +210,7 @@ function WhatIfSimulator({ caseData }: { caseData: CaseForLab }) {
     setError('');
     setResult('');
     try {
-      const chosen = Array.from(selected).map((i) => caseData.counterfactuals![i]);
+      const chosen = Array.from(selected).map((i) => scenarios[i]);
       const response = await chatAI([
         {
           role: 'system',
@@ -193,40 +232,64 @@ function WhatIfSimulator({ caseData }: { caseData: CaseForLab }) {
     }
   };
 
+  const reshuffleScenarios = () => {
+    setSelected(new Set());
+    setResult('');
+    generateScenarios();
+  };
+
   return (
     <section className="rounded-2xl border-2 border-purple-200 bg-purple-50/50 p-6">
-      <div className="mb-4 flex items-center gap-2">
-        <div className="rounded-full bg-purple-100 px-3 py-1 text-xs font-semibold text-purple-700">
-          AI-POWERED
+      <div className="mb-4 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="rounded-full bg-purple-100 px-3 py-1 text-xs font-semibold text-purple-700">
+            AI-POWERED
+          </div>
+          <h2 className="flex items-center gap-2 text-xl font-bold">
+            <Sparkles className="h-5 w-5 text-purple-600" />
+            What If? Counterfactual Simulator
+          </h2>
         </div>
-        <h2 className="flex items-center gap-2 text-xl font-bold">
-          <Sparkles className="h-5 w-5 text-purple-600" />
-          What If? Counterfactual Simulator
-        </h2>
+        {scenarios.length > 0 && !loadingScenarios && (
+          <button
+            onClick={reshuffleScenarios}
+            disabled={loading}
+            className="flex items-center gap-1 rounded-lg border border-purple-300 bg-white px-3 py-1 text-xs text-purple-700 hover:bg-purple-50 disabled:opacity-50"
+          >
+            <RotateCcw className="h-3 w-3" /> New scenarios
+          </button>
+        )}
       </div>
       <p className="mb-4 text-sm text-slate-600">
         Select one or more alternate scenarios. AI will simulate how history might have unfolded.
       </p>
 
-      <div className="mb-4 space-y-2">
-        {caseData.counterfactuals!.map((cf, i) => (
-          <label
-            key={i}
-            className="flex cursor-pointer items-start gap-3 rounded-lg bg-white p-3 shadow-sm transition hover:bg-slate-50"
-          >
-            <input
-              type="checkbox"
-              checked={selected.has(i)}
-              onChange={() => toggle(i)}
-              className="mt-1 h-4 w-4 accent-purple-600"
-            />
-            <span className="text-sm">{cf}</span>
-          </label>
-        ))}
-      </div>
+      {loadingScenarios ? (
+        <div className="flex items-center gap-2 rounded-lg bg-white p-4 text-sm text-slate-500">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Generating counterfactual scenarios...
+        </div>
+      ) : (
+        <div className="mb-4 space-y-2">
+          {scenarios.map((cf, i) => (
+            <label
+              key={i}
+              className="flex cursor-pointer items-start gap-3 rounded-lg bg-white p-3 shadow-sm transition hover:bg-slate-50"
+            >
+              <input
+                type="checkbox"
+                checked={selected.has(i)}
+                onChange={() => toggle(i)}
+                className="mt-1 h-4 w-4 accent-purple-600"
+              />
+              <span className="text-sm">{cf}</span>
+            </label>
+          ))}
+        </div>
+      )}
 
       <button
-        disabled={selected.size === 0 || loading}
+        disabled={selected.size === 0 || loading || loadingScenarios}
         onClick={simulate}
         className="flex items-center gap-2 rounded-lg bg-purple-600 px-6 py-2 font-medium text-white transition hover:bg-purple-700 disabled:cursor-not-allowed disabled:bg-slate-300"
       >
