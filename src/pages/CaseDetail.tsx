@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Calendar, Globe, BookOpen, AlertCircle, Lightbulb, MessageCircle } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import { getCaseById } from "@/data/cases";
+import InteractiveLab from "@/components/InteractiveLab";
 
 const categoryLabels: Record<string, string> = {
   crash: "Market Crash",
@@ -222,6 +223,14 @@ const CaseDetail = () => {
                     </div>
                   ))}
                 </div>
+              </motion.section>
+              {/* Interactive Lab (AI-powered) */}
+              <motion.section
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4, duration: 0.5 }}
+              >
+                <InteractiveLab caseData={caseData} />
               </motion.section>
             </div>
 

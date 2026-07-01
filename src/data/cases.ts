@@ -33,6 +33,16 @@ export interface CaseStudy {
   rootCauses: string[];
   keyLessons: string[];
   discussionQuestions: string[];
+  predictions?: {
+    asset: string;
+    question: string;
+    correctAnswer: "up" | "flat" | "down";
+    actualOutcome: string;
+    explanation: string;
+  }[];
+  counterfactuals?: string[];
+
+
 }
 
 export const cases: CaseStudy[] = [
@@ -72,6 +82,34 @@ export const cases: CaseStudy[] = [
       "If the Fed had rescued Lehman, would the long-term cost have been higher or lower?",
       "How could investors have detected the funding fragility before September 2008?",
       "What signals from 2007 should have triggered position reductions?",
+    ],
+    predictions: [
+      {
+        asset: "S&P 500 Financials Index",
+        question: "How did US financial stocks move in the 6 months following Lehman's collapse (Sept 2008 – Mar 2009)?",
+        correctAnswer: "down",
+        actualOutcome: "-53%",
+        explanation: "Systemic panic and forced deleveraging drove financials to multi-decade lows before the March 2009 bottom.",
+      },
+      {
+        asset: "10-Year US Treasury yield",
+        question: "How did the 10-year yield move in the 3 months after Lehman's bankruptcy?",
+        correctAnswer: "down",
+        actualOutcome: "3.7% → 2.2%",
+        explanation: "Flight-to-safety and Fed rate cuts drove yields sharply lower despite massive fiscal stimulus expectations.",
+      },
+      {
+        asset: "Gold (spot)",
+        question: "How did gold perform in the 12 months after Lehman's collapse?",
+        correctAnswer: "up",
+        actualOutcome: "+25%",
+        explanation: "Zero-rate policy, USD debasement fears, and safe-haven demand drove gold to new highs.",
+      },
+    ],
+    counterfactuals: [
+      "The Fed and Treasury bailed out Lehman as they did with Bear Stearns",
+      "Lehman had reduced leverage to 15:1 by 2007",
+      "Regulators had mandated banks to hold subprime MBS on-balance-sheet with higher capital requirements",
     ],
   },
   {
