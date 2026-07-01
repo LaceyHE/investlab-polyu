@@ -1,9 +1,8 @@
 // src/lib/ai.ts
-// Unified AI wrapper for X.AI (Grok)
+// Unified AI wrapper — routes through Supabase Edge Function (ai-chat)
+// This keeps DEEPSEEK_API_KEY on the server side (never exposed to browser).
 
-const API_KEY = import.meta.env.VITE_OPENAI_KEY;
-const API_URL = 'https://api.deepseek.com/v1/chat/completions';
-const MODEL = 'deepseek-chat';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface AIMessage {
   role: 'system' | 'user' | 'assistant';
@@ -11,29 +10,25 @@ export interface AIMessage {
 }
 
 export async function chatAI(messages: AIMessage[]): Promise<string> {
-  if (!API_KEY) {
-    throw new Error('AI features disabled — API key not configured.');
-  }
-
-  const response = await fetch(API_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      messages,
-      temperature: 0.7,
-      max_tokens: 600,
-    }),
+  const { data, error } = await supabase.functions.invoke('ai-chat', {
+    body: { messages },
   });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`AI request failed (${response.status}): ${errorText}`);
+  if (error) {
+    throw new Error(`AI request failed: ${error.message}`);
   }
 
-  const data = await response.json();
-  return data.choices?.[0]?.message?.content ?? 'No response.';
+  // Try common response shapes returned by the edge function.
+  const content =
+    data?.content ??
+    data?.choices?.[0]?.message?.content ??
+    data?.message?.content ??
+    data?.result ??
+    null;
+
+  if (!content) {
+    throw new Error('AI returned an empty response.');
+  }
+
+  return content;
 }
