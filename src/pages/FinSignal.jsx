@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import {
@@ -469,13 +469,6 @@ export default function FinSignal() {
     }
     setLoading(false);
   }, [searchTopic]);
-
-  /* ── Auto-fetch latest news on page load ── */
-  useEffect(() => {
-    fetchNews();
-    // run once on mount
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   /* ── LLM Analysis ── */
   const analyzeLLM = useCallback(async (index) => {
