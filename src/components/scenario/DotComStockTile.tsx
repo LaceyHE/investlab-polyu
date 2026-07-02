@@ -56,7 +56,7 @@ const DotComStockTile = ({ stock, marketData, currentDate, positionWeight, canBu
       exit={{ opacity: 0, scale: 0.95 }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      className={`relative rounded-xl border bg-card p-3 transition-all cursor-pointer ${
+      className={`relative rounded-none border bg-card p-3 transition-all cursor-pointer ${
         positionWeight > 0 ? 'border-primary/40 shadow-sm' : 'border-border hover:border-muted-foreground/30'
       }`}
     >
@@ -100,7 +100,7 @@ const DotComStockTile = ({ stock, marketData, currentDate, positionWeight, canBu
         <motion.div
           initial={{ opacity: 0, y: 4 }}
           animate={{ opacity: 1, y: 0 }}
-          className="absolute left-0 right-0 -bottom-1 translate-y-full z-20 rounded-lg border border-border bg-card shadow-lg p-3 mx-1"
+          className="absolute left-0 right-0 -bottom-1 translate-y-full z-20 rounded-none border-2 border-foreground bg-card shadow-lg p-3 mx-1"
         >
           <div className="grid grid-cols-3 gap-2 text-[10px] mb-2">
             <div>
@@ -125,14 +125,14 @@ const DotComStockTile = ({ stock, marketData, currentDate, positionWeight, canBu
         <button
           onClick={(e) => { e.stopPropagation(); onBuy(); }}
           disabled={!canBuy}
-          className="flex-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-xs font-semibold py-1.5 hover:bg-emerald-500/20 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          className="flex-1 rounded-none bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-xs font-semibold py-1.5 hover:bg-emerald-500/20 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
         >
           Buy 10%
         </button>
         <button
           onClick={(e) => { e.stopPropagation(); onSell(); }}
           disabled={positionWeight === 0}
-          className="flex-1 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-semibold py-1.5 hover:bg-red-500/20 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          className="flex-1 rounded-none bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-semibold py-1.5 hover:bg-red-500/20 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
         >
           Sell
         </button>

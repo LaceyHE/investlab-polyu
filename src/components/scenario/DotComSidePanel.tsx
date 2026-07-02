@@ -66,7 +66,7 @@ const DotComSidePanel = ({
   }, [filterIndustry]);
 
   return (
-    <div className="rounded-xl border border-border bg-card flex flex-col h-full min-h-0 overflow-hidden">
+    <div className="rounded-none border-2 border-foreground bg-card flex flex-col h-full min-h-0 overflow-hidden">
       {/* Always-visible allocation bar */}
       <div className="p-4 border-b border-border flex-shrink-0">
         <div className="flex h-3 rounded-full overflow-hidden bg-secondary">
@@ -180,7 +180,7 @@ const DotComSidePanel = ({
                       key={pos.ticker}
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
-                      className="rounded-lg border border-border p-3"
+                      className="rounded-none border-2 border-foreground p-3"
                     >
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
@@ -278,7 +278,7 @@ const StockUniverseTile = ({
       <Tooltip>
         <TooltipTrigger asChild>
           <div
-            className={`rounded-lg border p-2.5 transition-all ${
+            className={`rounded-none border p-2.5 transition-all ${
               positionWeight > 0 ? 'border-primary/40 bg-primary/5' : 'border-border hover:border-muted-foreground/30'
             }`}
           >

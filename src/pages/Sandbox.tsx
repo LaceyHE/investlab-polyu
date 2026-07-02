@@ -158,8 +158,8 @@ const Sandbox = () => {
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
           <div className="flex items-center gap-3 mb-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-secondary">
-              <FlaskConical className="h-5 w-5 text-foreground" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-none border-2 border-foreground bg-[var(--accent-yellow)] shadow-[2px_2px_0_hsl(var(--foreground))]">
+              <FlaskConical className="h-5 w-5 text-black" />
             </div>
             <div>
               <h1 className="font-serif text-3xl text-foreground">Investment Sandbox</h1>
@@ -198,7 +198,7 @@ const Sandbox = () => {
                 {/* Title row */}
                 <div className="flex items-center gap-4">
                   <div
-                    className="flex h-14 w-14 items-center justify-center rounded-2xl text-3xl shrink-0"
+                    className="flex h-14 w-14 items-center justify-center rounded-none text-3xl shrink-0"
                     style={{ backgroundColor: `${strategyDef?.color}15` }}
                   >
                     {strategyDef?.icon}
@@ -215,7 +215,7 @@ const Sandbox = () => {
 
                 {/* Try this — right below title */}
                 {selectedStrategy && selectedStrategy !== 'custom' && strategyContent[selectedStrategy] && (
-                  <div className="flex items-start gap-2.5 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
+                  <div className="flex items-start gap-2.5 rounded-none border border-primary/20 bg-primary/5 px-4 py-3">
                     <span className="text-primary text-sm shrink-0 mt-0.5">💡</span>
                     <p className="text-sm text-foreground leading-relaxed">
                       <span className="font-semibold text-primary">Try this: </span>
@@ -242,7 +242,7 @@ const Sandbox = () => {
 
                   {/* Slider Control */}
                   {sliderConfig && (
-                    <div className="rounded-xl border border-border bg-card p-5">
+                    <div className="rounded-none border-2 border-foreground bg-card p-5">
                       <div className="flex items-center justify-between mb-3">
                         <span className="text-sm font-medium text-foreground">{sliderConfig.label}</span>
                         <span className="text-xs font-mono text-muted-foreground">
@@ -278,7 +278,7 @@ const Sandbox = () => {
 
                       {/* One-line teaching note */}
                       {allocSharpe && (
-                        <p className="mt-3 rounded-lg border border-teal/20 bg-teal/5 px-3 py-2 text-xs leading-relaxed text-foreground">
+                        <p className="mt-3 rounded-none border border-teal/20 bg-teal/5 px-3 py-2 text-xs leading-relaxed text-foreground">
                           📍 In <span className="font-medium">{period.subtitle}</span>, the Sharpe ratio peaked at{" "}
                           <span className="font-semibold text-teal">{allocSharpe.bestStockPct}% stocks</span>
                           {" "}(Sharpe {allocSharpe.bestSharpe.toFixed(2)}) — <span className="font-medium">not</span> the classic 60/40.
@@ -305,7 +305,7 @@ const Sandbox = () => {
                     <div className="flex flex-col gap-4">
                       <MetricsPanel result={result} />
                       {radarScores && (
-                        <div className="rounded-xl border border-border bg-card px-5 py-4 flex-1">
+                        <div className="rounded-none border-2 border-foreground bg-card px-5 py-4 flex-1">
                           <p className="text-sm font-semibold text-foreground mb-3">Dimension Scores</p>
                           <div className="flex flex-col gap-2.5">
                             {radarScores.map((s) => (

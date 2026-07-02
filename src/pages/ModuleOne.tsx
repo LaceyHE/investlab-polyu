@@ -267,7 +267,7 @@ const ModuleOne = () => {
             <Link
               to="/module/2"
               onClick={() => (markComplete("module_complete", "module-1"), completeModule("module-1", 5, 5))}
-              className="group inline-flex items-center gap-2 rounded-xl bg-gradient-warm px-6 py-3 text-sm font-semibold text-primary-foreground transition-all hover:shadow-lg hover:shadow-primary/20"
+              className="group inline-flex items-center gap-2 rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-accent-foreground transition-all hover:shadow-lg hover:shadow-primary/20"
             >
               Continue to Module 2
               <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />

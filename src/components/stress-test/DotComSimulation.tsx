@@ -56,7 +56,7 @@ export default function DotComSimulation({ onBack }: Props) {
           <ArrowLeft className="h-4 w-4" /> Back to scenarios
         </button>
 
-        <div className="rounded-xl border border-border bg-card p-8 text-center space-y-4">
+        <div className="rounded-none border-2 border-foreground bg-card p-8 text-center space-y-4">
           <p className="text-6xl">📈</p>
           <h2 className="font-serif text-3xl text-foreground">The Dot-Com Bubble</h2>
           <p className="text-muted-foreground max-w-md mx-auto">
@@ -79,7 +79,7 @@ export default function DotComSimulation({ onBack }: Props) {
           </div>
           <button
             onClick={sim.startSimulation}
-            className="mt-4 inline-flex items-center gap-2 rounded-xl bg-foreground text-background px-8 py-3 font-semibold text-sm hover:opacity-90 transition-opacity"
+            className="mt-4 inline-flex items-center gap-2 rounded-none bg-foreground text-background px-8 py-3 font-semibold text-sm hover:opacity-90 transition-opacity"
           >
             <Play className="h-4 w-4" /> Enter the Bubble
           </button>
@@ -112,7 +112,7 @@ export default function DotComSimulation({ onBack }: Props) {
       </button>
 
       {/* ====== MARKET DASHBOARD ====== */}
-      <div className={`rounded-xl border ${sentimentBorder[md.sentiment]} bg-card p-5`}>
+      <div className={`rounded-none border ${sentimentBorder[md.sentiment]} bg-card p-5`}>
         <div className="flex items-center justify-between mb-4">
           <div>
             <p className="font-mono text-xs text-muted-foreground">Date</p>
@@ -165,7 +165,7 @@ export default function DotComSimulation({ onBack }: Props) {
       </div>
 
       {/* ====== NEWS FEED ====== */}
-      <div className="rounded-xl border border-border bg-card overflow-hidden">
+      <div className="rounded-none border-2 border-foreground bg-card overflow-hidden">
         <button
           onClick={() => setShowNews(!showNews)}
           className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-secondary/50 transition-colors"
@@ -206,7 +206,7 @@ export default function DotComSimulation({ onBack }: Props) {
       </div>
 
       {/* ====== PORTFOLIO OVERVIEW ====== */}
-      <div className="rounded-xl border border-border bg-card p-5">
+      <div className="rounded-none border-2 border-foreground bg-card p-5">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
           <div>
             <p className="text-[10px] text-muted-foreground">NAV</p>
@@ -258,7 +258,7 @@ export default function DotComSimulation({ onBack }: Props) {
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className={`rounded-xl border p-4 flex items-center justify-between ${sentimentBorder[md.sentiment]} bg-card`}
+            className={`rounded-none border p-4 flex items-center justify-between ${sentimentBorder[md.sentiment]} bg-card`}
           >
             <p className="text-sm text-foreground">{sim.monthSummary}</p>
             <button onClick={sim.dismissSummary} className="text-muted-foreground hover:text-foreground ml-2">
@@ -274,7 +274,7 @@ export default function DotComSimulation({ onBack }: Props) {
           <button
             key={s}
             onClick={() => setActiveFilter(s)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+            className={`px-3 py-1.5 rounded-none text-xs font-medium transition-colors ${
               activeFilter === s
                 ? 'bg-foreground text-background'
                 : 'bg-secondary text-muted-foreground hover:text-foreground'
@@ -307,7 +307,7 @@ export default function DotComSimulation({ onBack }: Props) {
         <button
           onClick={sim.advanceMonth}
           disabled={sim.holdingsCount < 5}
-          className="inline-flex items-center gap-2 rounded-xl bg-foreground text-background px-8 py-3.5 font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-30 disabled:cursor-not-allowed"
+          className="inline-flex items-center gap-2 rounded-none bg-foreground text-background px-8 py-3.5 font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-30 disabled:cursor-not-allowed"
         >
           <Play className="h-4 w-4" /> Advance 1 Month
         </button>
@@ -316,7 +316,7 @@ export default function DotComSimulation({ onBack }: Props) {
 
       {/* ====== TRADE LOG ====== */}
       {sim.tradeLog.length > 0 && (
-        <div className="rounded-xl border border-border bg-card overflow-hidden">
+        <div className="rounded-none border-2 border-foreground bg-card overflow-hidden">
           <button
             onClick={() => setShowTradeLog(!showTradeLog)}
             className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-secondary/50 transition-colors"
@@ -361,7 +361,7 @@ export default function DotComSimulation({ onBack }: Props) {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="w-full max-w-md rounded-xl border border-border bg-card p-6 space-y-4 shadow-lg"
+              className="w-full max-w-md rounded-none border-2 border-foreground bg-card p-6 space-y-4 shadow-lg"
             >
               <div className="text-center">
                 <p className="text-2xl mb-2">⚡</p>
@@ -373,7 +373,7 @@ export default function DotComSimulation({ onBack }: Props) {
                   <button
                     key={i}
                     onClick={() => sim.handleDecision(opt.action)}
-                    className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm text-foreground hover:bg-secondary transition-colors text-left"
+                    className="w-full rounded-none border-2 border-foreground bg-secondary/50 px-4 py-3 text-sm text-foreground hover:bg-secondary transition-colors text-left"
                   >
                     {opt.label}
                   </button>

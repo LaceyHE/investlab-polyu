@@ -15,9 +15,9 @@ const MethodologyPanel = ({ methodology }: MethodologyPanelProps) => {
   const { icon: ConceptIcon, color } = CONCEPT_LABELS[methodology.concept];
 
   return (
-    <div className="rounded-xl border border-warm/25 bg-warm/5 p-4 space-y-4">
+    <div className="rounded-none border border-warm/25 bg-warm/5 p-4 space-y-4">
       {/* Disclaimer */}
-      <div className="flex items-start gap-2 rounded-lg bg-warm/10 border border-warm/20 px-3 py-2">
+      <div className="flex items-start gap-2 rounded-none bg-warm/10 border border-warm/20 px-3 py-2">
         <FlaskConical className="h-4 w-4 text-warm mt-0.5 shrink-0" />
         <p className="text-xs text-warm leading-relaxed">
           <strong>Hypothetical scenario</strong> — generated from quantitative assumptions, not real market data.
@@ -33,7 +33,7 @@ const MethodologyPanel = ({ methodology }: MethodologyPanelProps) => {
       </div>
 
       {/* Formula */}
-      <div className="rounded-lg border border-border bg-card px-4 py-3">
+      <div className="rounded-none border-2 border-foreground bg-card px-4 py-3">
         <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-2 font-medium">Formula</p>
         <pre className="text-xs text-foreground font-mono leading-relaxed whitespace-pre-wrap">
           {methodology.formula}
@@ -43,7 +43,7 @@ const MethodologyPanel = ({ methodology }: MethodologyPanelProps) => {
       {/* Key assumption cards */}
       <div className="grid gap-2 sm:grid-cols-3">
         {methodology.keyInputs.map((input, i) => (
-          <div key={i} className="rounded-lg border border-border bg-card p-3">
+          <div key={i} className="rounded-none border-2 border-foreground bg-card p-3">
             <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1">{input.label}</p>
             <p className="text-sm font-mono font-semibold text-foreground">{input.value}</p>
             <p className="text-[10px] text-muted-foreground mt-1 leading-snug">{input.source}</p>

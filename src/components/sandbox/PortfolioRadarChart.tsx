@@ -30,12 +30,12 @@ const PortfolioRadarChart = ({ result, strategy, param, strategyColor }: Props) 
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-xl border border-border bg-card p-5 flex flex-col h-full"
+      className="rounded-none border-2 border-foreground bg-card p-5 flex flex-col h-full"
     >
       {/* Header: title + big avg score */}
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-semibold text-foreground">Portfolio Profile</h3>
-        <div className={`flex items-baseline gap-1 rounded-lg border px-3 py-1.5 ${avgBg}`}>
+        <div className={`flex items-baseline gap-1 rounded-none border px-3 py-1.5 ${avgBg}`}>
           <span className={`font-serif text-2xl font-bold leading-none ${avgColor}`}>
             {avg.toFixed(1)}
           </span>

@@ -225,7 +225,7 @@ const StrategyEducation = ({ strategy }: StrategyEducationProps) => {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.1 }}
-      className="rounded-xl border border-border bg-card overflow-hidden"
+      className="rounded-none border-2 border-foreground bg-card overflow-hidden"
     >
       {/* ── Always visible: summary + quick tip ── */}
       <div className="p-5 space-y-3">
@@ -263,7 +263,7 @@ const StrategyEducation = ({ strategy }: StrategyEducationProps) => {
 
               {/* Works well / Struggles */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div className="rounded-lg border border-teal/20 bg-teal/5 p-3.5">
+                <div className="rounded-none border border-teal/20 bg-teal/5 p-3.5">
                   <div className="flex items-center gap-1.5 mb-2">
                     <TrendingUp className="h-3.5 w-3.5 text-teal" />
                     <span className="text-xs font-semibold text-teal">Works well in</span>
@@ -276,7 +276,7 @@ const StrategyEducation = ({ strategy }: StrategyEducationProps) => {
                     ))}
                   </ul>
                 </div>
-                <div className="rounded-lg border border-warm/20 bg-warm/5 p-3.5">
+                <div className="rounded-none border border-warm/20 bg-warm/5 p-3.5">
                   <div className="flex items-center gap-1.5 mb-2">
                     <TrendingDown className="h-3.5 w-3.5 text-warm" />
                     <span className="text-xs font-semibold text-warm">Struggles in</span>
@@ -292,7 +292,7 @@ const StrategyEducation = ({ strategy }: StrategyEducationProps) => {
               </div>
 
               {/* Slider detail */}
-              <div className="rounded-lg border border-primary/20 bg-primary/5 p-3.5">
+              <div className="rounded-none border border-primary/20 bg-primary/5 p-3.5">
                 <div className="flex items-center gap-1.5 mb-2">
                   <SlidersHorizontal className="h-3.5 w-3.5 text-primary" />
                   <span className="text-xs font-semibold text-primary">How to adjust the slider</span>
@@ -308,7 +308,7 @@ const StrategyEducation = ({ strategy }: StrategyEducationProps) => {
 
               {/* Mechanism note */}
               {c.mechanismNote && (
-                <div className="flex items-start gap-2 rounded-lg border border-amber-500/20 bg-amber-500/5 px-3.5 py-3">
+                <div className="flex items-start gap-2 rounded-none border border-amber-500/20 bg-amber-500/5 px-3.5 py-3">
                   <AlertCircle className="h-3.5 w-3.5 text-amber-500 mt-0.5 shrink-0" />
                   <p className="text-xs text-muted-foreground leading-relaxed">
                     <span className="font-semibold text-amber-500">How it works under the hood: </span>
@@ -318,7 +318,7 @@ const StrategyEducation = ({ strategy }: StrategyEducationProps) => {
               )}
 
               {/* Pro tip */}
-              <div className="flex items-start gap-2 rounded-lg bg-secondary/60 px-3.5 py-3">
+              <div className="flex items-start gap-2 rounded-none bg-secondary/60 px-3.5 py-3">
                 <Lightbulb className="h-3.5 w-3.5 text-foreground mt-0.5 shrink-0" />
                 <p className="text-xs text-foreground font-medium leading-relaxed">
                   <span className="text-primary">Pro Tip:</span> {c.proTip}
@@ -334,7 +334,7 @@ const StrategyEducation = ({ strategy }: StrategyEducationProps) => {
                   </div>
                   <div className="space-y-2">
                     {c.conclusion.map((point, i) => (
-                      <div key={i} className="rounded-lg border border-border bg-secondary/30 px-3.5 py-3">
+                      <div key={i} className="rounded-none border-2 border-foreground bg-secondary/30 px-3.5 py-3">
                         <p className="text-xs font-semibold text-foreground mb-1">{point.label}</p>
                         <p className="text-xs text-muted-foreground leading-relaxed">{point.text}</p>
                       </div>

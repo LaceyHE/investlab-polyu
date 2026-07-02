@@ -77,7 +77,7 @@ const PushMessages = ({ messages, onDismiss }: PushMessagesProps) => {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -20, scale: 0.9 }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className={`rounded-xl border p-3 px-4 mb-2 flex flex-col max-w-md w-full shadow-lg backdrop-blur-sm pointer-events-auto ${styleMap[msg.type]}`}
+              className={`rounded-none border p-3 px-4 mb-2 flex flex-col max-w-md w-full shadow-lg backdrop-blur-sm pointer-events-auto ${styleMap[msg.type]}`}
             >
               <div className="flex items-start gap-2.5">
                 <Icon className="h-4 w-4 mt-0.5 flex-shrink-0" />

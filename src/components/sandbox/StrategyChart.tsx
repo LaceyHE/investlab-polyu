@@ -94,7 +94,7 @@ const StrategyChart = ({ result, strategyColor, showSignals, benchmarkLabel = 'B
   const hasMA = showSignals && result.indicators && result.indicators.length > 0;
 
   return (
-    <div className="rounded-xl border border-border bg-card p-4 space-y-4">
+    <div className="rounded-none border-2 border-foreground bg-card p-4 space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-base font-semibold text-foreground">Portfolio Performance</h3>
         <span className="text-xs text-muted-foreground">Starting: $10,000</span>
@@ -201,7 +201,7 @@ const StrategyChart = ({ result, strategyColor, showSignals, benchmarkLabel = 'B
 
       {/* Signal legend */}
       {showSignals && result.signals && result.signals.length > 0 && (
-        <div className="rounded-lg border border-border bg-secondary/40 p-3 space-y-2">
+        <div className="rounded-none border-2 border-foreground bg-secondary/40 p-3 space-y-2">
           <p className="text-xs font-medium text-foreground">Trading Signals</p>
           <div className="flex flex-wrap gap-4">
             <div className="flex items-center gap-2">

@@ -85,13 +85,13 @@ const LearningPath = () => {
           animate={{ opacity: 1, y: 0 }}
           className="mb-12"
         >
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-primary mb-3">
+          <span className="inline-block -rotate-2 rounded-none border-2 border-foreground bg-[var(--accent-violet)] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-white shadow-[2px_2px_0_hsl(var(--foreground))]">
             Your Journey
-          </p>
-          <h1 className="font-serif text-3xl md:text-4xl text-foreground mb-4">
+          </span>
+          <h1 className="mt-5 font-serif text-4xl md:text-5xl font-bold uppercase leading-[0.95] tracking-tight text-foreground mb-4">
             Learning Path
           </h1>
-          <p className="text-muted-foreground max-w-2xl mb-6">
+          <p className="text-muted-foreground max-w-2xl mb-6 normal-case">
             A six-module journey from understanding price movement to mastering portfolio-level strategic thinking.
           </p>
           <div className="max-w-md">
@@ -107,11 +107,11 @@ const LearningPath = () => {
           className="mb-12"
         >
           <Link to="/foundations" className="block group">
-            <div className={`relative overflow-hidden rounded-xl border p-6 transition-all hover:shadow-lg hover:shadow-primary/10 ${
-              foundationsDone ? "border-teal/30 bg-teal/5 hover:border-teal/50" : "border-primary/30 bg-primary/5 hover:border-primary/50"
+            <div className={`relative overflow-hidden rounded-none border-2 border-foreground p-6 transition-all duration-100 shadow-[3px_3px_0_hsl(var(--foreground))] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0_hsl(var(--foreground))] ${
+              foundationsDone ? "bg-teal/5" : "bg-primary/5"
             }`}>
               <div className="flex items-start gap-4">
-                <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-lg ${
+                <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-none border-2 border-foreground ${
                   foundationsDone ? "bg-teal/15 text-teal" : "bg-primary/15 text-primary"
                 }`}>
                   {foundationsDone ? <CheckCircle2 className="h-6 w-6" /> : <Sprout className="h-6 w-6" />}
@@ -176,7 +176,7 @@ const LearningPath = () => {
             />
 
             {/* Live progress panel */}
-            <div className="rounded-xl border border-border bg-card p-5 mt-6">
+            <div className="rounded-none border-2 border-foreground bg-card p-5 mt-6 shadow-[3px_3px_0_hsl(var(--foreground))]">
               <h3 className="font-serif text-base text-foreground mb-2">Your Progress</h3>
               <div className="space-y-3">
                 <div className="flex items-center justify-between text-sm">

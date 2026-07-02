@@ -36,7 +36,7 @@ const MetricsPanel = ({ result }: Props) => {
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-xl border border-border bg-card overflow-hidden"
+      className="rounded-none border-2 border-foreground bg-card overflow-hidden"
     >
       {/* Hero metrics */}
       <div className="grid grid-cols-2 divide-x divide-border border-b border-border">

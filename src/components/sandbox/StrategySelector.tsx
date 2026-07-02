@@ -75,7 +75,7 @@ const StrategySelector = ({ selected, onSelect }: Props) => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.08 }}
               onClick={() => onSelect(s.id)}
-              className={`group relative rounded-xl border p-5 text-left transition-all ${
+              className={`group relative rounded-none border p-5 text-left transition-all ${
                 isActive
                   ? 'border-foreground bg-secondary shadow-sm'
                   : 'border-border bg-card hover:border-muted-foreground/40'
@@ -111,7 +111,7 @@ const StrategySelector = ({ selected, onSelect }: Props) => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: presetStrategies.length * 0.08 }}
             onClick={() => onSelect(customStrategy.id)}
-            className={`group relative w-full rounded-xl border p-6 text-left transition-all ${
+            className={`group relative w-full rounded-none border p-6 text-left transition-all ${
               isActive
                 ? 'border-foreground bg-secondary shadow-sm'
                 : 'border-dashed border-primary/40 bg-primary/5 hover:border-primary/60 hover:bg-primary/10'

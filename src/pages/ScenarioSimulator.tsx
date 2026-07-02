@@ -122,7 +122,7 @@ const ScenarioSimulator = () => {
           {!selectedScenario ? (
             <motion.div key="selection" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <div className="flex items-center gap-3 mb-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/15 text-primary">
+                <div className="flex h-10 w-10 items-center justify-center rounded-none border-2 border-foreground bg-[var(--accent-pink)] text-black shadow-[2px_2px_0_hsl(var(--foreground))]">
                   <Compass className="h-5 w-5" />
                 </div>
                 <h1 className="font-serif text-3xl text-foreground">Scenario Simulator</h1>
@@ -196,7 +196,7 @@ const ScenarioSimulator = () => {
                           { label: 'Return', value: `${simulation.metrics.totalReturn >= 0 ? '+' : ''}${simulation.metrics.totalReturn.toFixed(1)}%`, color: simulation.metrics.totalReturn >= 0 ? 'text-teal' : 'text-destructive' },
                           { label: 'Drawdown', value: `${simulation.metrics.maxDrawdown.toFixed(1)}%`, color: 'text-destructive' },
                         ].map(stat => (
-                          <div key={stat.label} className="rounded-lg border border-border bg-card p-3 text-center">
+                          <div key={stat.label} className="rounded-none border-2 border-foreground bg-card p-3 text-center">
                             <p className="text-xs text-muted-foreground">{stat.label}</p>
                             <p className={`text-sm font-mono font-medium mt-1 ${(stat as any).color || 'text-foreground'}`}>{stat.value}</p>
                           </div>

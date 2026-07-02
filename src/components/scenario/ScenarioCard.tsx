@@ -16,7 +16,7 @@ const ScenarioCard = ({ scenario, index, onSelect }: ScenarioCardProps) => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
       onClick={onSelect}
-      className={`group rounded-xl border p-6 text-left transition-all ${
+      className={`group rounded-none border p-6 text-left transition-all ${
         isFuture
           ? 'border-warm/25 bg-warm/5 hover:border-warm/45'
           : 'border-border bg-card hover:border-muted-foreground/30'

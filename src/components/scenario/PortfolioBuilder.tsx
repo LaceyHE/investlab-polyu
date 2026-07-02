@@ -48,7 +48,7 @@ const PortfolioBuilder = ({
   const totalAllocated = positions.reduce((s, p) => s + p.weight, 0);
 
   return (
-    <div className="rounded-xl border border-border bg-card p-4">
+    <div className="rounded-none border-2 border-foreground bg-card p-4">
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-serif text-base text-foreground">Portfolio</h3>
         <button
@@ -96,7 +96,7 @@ const PortfolioBuilder = ({
             exit={{ height: 0, opacity: 0 }}
             className="overflow-hidden mb-3"
           >
-            <div className="grid grid-cols-3 gap-1 p-2 rounded-lg bg-secondary/50">
+            <div className="grid grid-cols-3 gap-1 p-2 rounded-none bg-secondary/50">
               {unusedTickers.map(ticker => (
                 <button
                   key={ticker}
@@ -105,7 +105,7 @@ const PortfolioBuilder = ({
                     setShowAddTicker(false);
                   }}
                   disabled={totalAllocated >= 100}
-                  className="px-2 py-1.5 text-xs rounded-lg bg-card hover:bg-accent text-foreground transition-colors disabled:opacity-50"
+                  className="px-2 py-1.5 text-xs rounded-none bg-card hover:bg-accent text-foreground transition-colors disabled:opacity-50"
                 >
                   {ticker}
                 </button>
@@ -126,7 +126,7 @@ const PortfolioBuilder = ({
               key={pos.ticker}
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
-              className="rounded-lg border border-border p-3"
+              className="rounded-none border-2 border-foreground p-3"
             >
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">

@@ -17,19 +17,16 @@ const SideModuleCard = ({ title, description, icon, variant, locked = false, to 
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className={`relative overflow-hidden rounded-xl border p-6 transition-all duration-300 ${
+      className={`relative overflow-hidden rounded-none border-2 border-foreground p-6 shadow-[3px_3px_0_hsl(var(--foreground))] transition-all duration-100 ${
         locked
-          ? "border-border opacity-60 cursor-not-allowed"
+          ? "opacity-60 cursor-not-allowed shadow-none"
           : variant === "sandbox"
-          ? "border-teal/20 hover:border-teal/40 glow-teal cursor-pointer"
-          : "border-primary/20 hover:border-primary/40 glow-warm cursor-pointer"
+          ? "bg-teal/5 cursor-pointer hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0_hsl(var(--foreground))]"
+          : "bg-primary/5 cursor-pointer hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0_hsl(var(--foreground))]"
       }`}
     >
-      <div className={`absolute top-0 right-0 h-32 w-32 rounded-full blur-3xl opacity-10 ${
-        variant === "sandbox" ? "bg-teal" : "bg-primary"
-      }`} />
       <div className="relative">
-        <div className={`mb-4 flex h-10 w-10 items-center justify-center rounded-lg ${
+        <div className={`mb-4 flex h-10 w-10 items-center justify-center rounded-none border-2 border-foreground ${
           variant === "sandbox" ? "bg-teal/15 text-teal" : "bg-primary/15 text-primary"
         }`}>
           {icon}

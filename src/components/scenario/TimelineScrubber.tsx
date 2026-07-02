@@ -48,7 +48,7 @@ const TimelineScrubber = ({
   };
 
   return (
-    <div className="rounded-xl border border-border bg-card p-4 space-y-2">
+    <div className="rounded-none border-2 border-foreground bg-card p-4 space-y-2">
       {/* Event flash */}
       <AnimatePresence>
         {flashEvent && (
@@ -56,7 +56,7 @@ const TimelineScrubber = ({
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="rounded-lg bg-primary/10 border border-primary/20 p-2 text-xs text-foreground"
+            className="rounded-none bg-primary/10 border border-primary/20 p-2 text-xs text-foreground"
           >
             <span className="font-medium">{flashEvent.label}</span>
             <span className="text-muted-foreground ml-1">— {flashEvent.description}</span>
@@ -68,13 +68,13 @@ const TimelineScrubber = ({
         <div className="flex items-center gap-2">
           <button
             onClick={onTogglePlay}
-            className="flex h-9 w-9 items-center justify-center rounded-lg bg-secondary hover:bg-accent transition-colors text-foreground"
+            className="flex h-9 w-9 items-center justify-center rounded-none bg-secondary hover:bg-accent transition-colors text-foreground"
           >
             {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
           </button>
           <button
             onClick={() => onScrub(Math.min(currentIndex + 5, totalDates - 1))}
-            className="flex h-9 w-9 items-center justify-center rounded-lg bg-secondary hover:bg-accent transition-colors text-foreground"
+            className="flex h-9 w-9 items-center justify-center rounded-none bg-secondary hover:bg-accent transition-colors text-foreground"
           >
             <SkipForward className="h-4 w-4" />
           </button>
@@ -95,7 +95,7 @@ const TimelineScrubber = ({
             <button
               key={speed}
               onClick={() => onSetSpeed(speed)}
-              className={`px-2 py-1 text-xs rounded-lg transition-colors ${
+              className={`px-2 py-1 text-xs rounded-none transition-colors ${
                 playSpeed === speed ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
               }`}
             >

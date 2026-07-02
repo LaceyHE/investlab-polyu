@@ -7,14 +7,14 @@ interface Props {
 
 const TimePeriodSelector = ({ selected, onChange }: Props) => {
   return (
-    <div className="rounded-xl border border-border bg-card p-4">
+    <div className="rounded-none border-2 border-foreground bg-card p-4">
       <p className="text-xs text-muted-foreground mb-3 uppercase tracking-widest">Market Scenario</p>
       <div className="grid grid-cols-3 gap-2">
         {TIME_PERIODS.map(period => (
           <button
             key={period.key}
             onClick={() => onChange(period)}
-            className={`rounded-lg border px-3 py-2.5 text-left transition-all ${
+            className={`rounded-none border px-3 py-2.5 text-left transition-all ${
               selected.key === period.key
                 ? 'border-primary bg-primary/10'
                 : 'border-border bg-secondary/50 hover:border-muted-foreground/40'

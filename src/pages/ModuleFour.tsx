@@ -145,7 +145,7 @@ const ModuleFour = () => {
                 ))}
               </div>
               {strategy && (
-                <button onClick={() => setStep(1)} className="mt-6 rounded-xl bg-gradient-warm px-6 py-3 text-sm font-semibold text-primary-foreground">
+                <button onClick={() => setStep(1)} className="mt-6 rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-accent-foreground">
                   Confirm Strategy & Build Portfolio <ArrowRight className="h-4 w-4 inline ml-1" />
                 </button>
               )}
@@ -220,7 +220,7 @@ const ModuleFour = () => {
               )}
 
               {positions.length >= 5 && (
-                <button onClick={() => { setStep(2); setAnalysisShown(true); }} className="mt-6 rounded-xl bg-gradient-warm px-6 py-3 text-sm font-semibold text-primary-foreground">
+                <button onClick={() => { setStep(2); setAnalysisShown(true); }} className="mt-6 rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-accent-foreground">
                   Submit for Analysis <ArrowRight className="h-4 w-4 inline ml-1" />
                 </button>
               )}
@@ -268,7 +268,7 @@ const ModuleFour = () => {
                 <Link to="/module/3" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
                   <ArrowLeft className="h-4 w-4" /> Module 3
                 </Link>
-                <Link to="/module/5" onClick={() => (markComplete("module_complete", "module-4"), completeModule("module-4"))} className="group inline-flex items-center gap-2 rounded-xl bg-gradient-warm px-6 py-3 text-sm font-semibold text-primary-foreground">
+                <Link to="/module/5" onClick={() => (markComplete("module_complete", "module-4"), completeModule("module-4"))} className="group inline-flex items-center gap-2 rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-accent-foreground">
                   Continue to Module 5 <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
                 </Link>
               </div>

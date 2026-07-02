@@ -58,7 +58,7 @@ const StrategyAIExplanation = ({ strategy, strategyName, param, paramLabel, resu
   };
 
   return (
-    <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
+    <div className="rounded-none border border-primary/20 bg-primary/5 p-4">
       <button
         onClick={() => setIsExpanded(!isExpanded)}
         className="flex items-center justify-between w-full"
@@ -81,7 +81,7 @@ const StrategyAIExplanation = ({ strategy, strategyName, param, paramLabel, resu
             {!commentary && !isLoading && !error && (
               <button
                 onClick={fetchExplanation}
-                className="w-full rounded-lg bg-foreground text-background px-4 py-2 text-sm font-medium hover:opacity-90 transition-opacity"
+                className="w-full rounded-none bg-foreground text-background px-4 py-2 text-sm font-medium hover:opacity-90 transition-opacity"
               >
                 Explain this strategy
               </button>
@@ -95,7 +95,7 @@ const StrategyAIExplanation = ({ strategy, strategyName, param, paramLabel, resu
             )}
 
             {error && (
-              <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
+              <div className="rounded-none bg-destructive/10 p-3 text-sm text-destructive">
                 {error}
                 <button onClick={fetchExplanation} className="ml-2 underline hover:no-underline">Retry</button>
               </div>

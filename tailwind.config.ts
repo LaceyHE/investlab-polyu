@@ -28,13 +28,14 @@ export default {
   				'sans-serif'
   			],
   			serif: [
-  				'Lora',
-  				'ui-serif',
-  				'Georgia',
-  				'Cambria',
-  				'Times New Roman',
-  				'Times',
-  				'serif'
+  				'Space Grotesk',
+  				'ui-sans-serif',
+  				'system-ui',
+  				'sans-serif'
+  			],
+  			pixel: [
+  				'Press Start 2P',
+  				'monospace'
   			],
   			mono: [
   				'Space Mono',

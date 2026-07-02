@@ -209,7 +209,7 @@ const CustomPortfolioBuilder = ({ period = DEFAULT_PERIOD }: { period?: TimePeri
   return (
     <div className="space-y-5">
       {/* Preset Templates */}
-      <div className="rounded-xl border border-border bg-card p-5">
+      <div className="rounded-none border-2 border-foreground bg-card p-5">
         <div className="flex items-center gap-2 mb-3">
           <Layers className="h-4 w-4 text-muted-foreground" />
           <h3 className="text-sm font-medium text-foreground">Start from a Preset</h3>
@@ -219,7 +219,7 @@ const CustomPortfolioBuilder = ({ period = DEFAULT_PERIOD }: { period?: TimePeri
             <button
               key={preset.name}
               onClick={() => loadPreset(preset)}
-              className="flex flex-col items-start rounded-lg border border-border bg-secondary/50 px-3 py-2.5 text-left hover:border-muted-foreground/40 hover:bg-accent transition-all"
+              className="flex flex-col items-start rounded-none border-2 border-foreground bg-secondary/50 px-3 py-2.5 text-left hover:border-muted-foreground/40 hover:bg-accent transition-all"
             >
               <span className="text-base mb-1">{preset.icon}</span>
               <span className="text-xs font-medium text-foreground">{preset.name}</span>
@@ -232,7 +232,7 @@ const CustomPortfolioBuilder = ({ period = DEFAULT_PERIOD }: { period?: TimePeri
       </div>
 
       {/* Asset Selection */}
-      <div className="rounded-xl border border-border bg-card p-5">
+      <div className="rounded-none border-2 border-foreground bg-card p-5">
         <h3 className="text-sm font-medium text-foreground mb-3">
           Customize Assets <span className="text-muted-foreground">({selectedAssets.length}/{MAX_PORTFOLIO_ASSETS})</span>
         </h3>
@@ -251,7 +251,7 @@ const CustomPortfolioBuilder = ({ period = DEFAULT_PERIOD }: { period?: TimePeri
                         key={asset.ticker}
                         onClick={() => isSelected ? removeAsset(asset.ticker) : addAsset(asset.ticker)}
                         disabled={isFull}
-                        className={`flex flex-col items-start rounded-lg border p-3 text-left transition-all ${
+                        className={`flex flex-col items-start rounded-none border p-3 text-left transition-all ${
                           isSelected
                             ? 'border-primary bg-primary/10'
                             : isFull
@@ -306,7 +306,7 @@ const CustomPortfolioBuilder = ({ period = DEFAULT_PERIOD }: { period?: TimePeri
             className="space-y-2"
           >
             {correlationWarnings.map(w => (
-              <div key={w.group} className="flex items-start gap-2.5 rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3">
+              <div key={w.group} className="flex items-start gap-2.5 rounded-none border border-amber-500/30 bg-amber-500/5 px-4 py-3">
                 <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
                 <div>
                   <p className="text-xs font-semibold text-amber-500 mb-0.5">
@@ -327,7 +327,7 @@ const CustomPortfolioBuilder = ({ period = DEFAULT_PERIOD }: { period?: TimePeri
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="rounded-xl border border-border bg-card p-5 space-y-4"
+            className="rounded-none border-2 border-foreground bg-card p-5 space-y-4"
           >
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-medium text-foreground">Allocate Weights</h3>
@@ -380,7 +380,7 @@ const CustomPortfolioBuilder = ({ period = DEFAULT_PERIOD }: { period?: TimePeri
                 {/* Card A */}
                 <button
                   onClick={() => { setRebalanceFreq('monthly'); setHasRun(false); }}
-                  className={`flex flex-col items-start rounded-lg border p-3 text-left transition-all ${
+                  className={`flex flex-col items-start rounded-none border p-3 text-left transition-all ${
                     rebalanceFreq === 'monthly'
                       ? 'border-primary bg-primary/10 ring-1 ring-primary/30'
                       : 'border-border bg-secondary/40 hover:border-muted-foreground/40'
@@ -401,7 +401,7 @@ const CustomPortfolioBuilder = ({ period = DEFAULT_PERIOD }: { period?: TimePeri
                 {/* Card B */}
                 <button
                   onClick={() => { setRebalanceFreq('none'); setHasRun(false); }}
-                  className={`flex flex-col items-start rounded-lg border p-3 text-left transition-all ${
+                  className={`flex flex-col items-start rounded-none border p-3 text-left transition-all ${
                     rebalanceFreq === 'none'
                       ? 'border-primary bg-primary/10 ring-1 ring-primary/30'
                       : 'border-border bg-secondary/40 hover:border-muted-foreground/40'
@@ -430,7 +430,7 @@ const CustomPortfolioBuilder = ({ period = DEFAULT_PERIOD }: { period?: TimePeri
             <button
               onClick={runBacktest}
               disabled={!isValid || isLoadingData}
-              className="w-full flex items-center justify-center gap-2 rounded-xl border border-border bg-secondary py-3 text-sm font-medium text-foreground hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex items-center justify-center gap-2 rounded-none border-2 border-foreground bg-secondary py-3 text-sm font-medium text-foreground hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoadingData ? (
                 <>
@@ -455,7 +455,7 @@ const CustomPortfolioBuilder = ({ period = DEFAULT_PERIOD }: { period?: TimePeri
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
-            className="flex items-start gap-2.5 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3"
+            className="flex items-start gap-2.5 rounded-none border border-destructive/30 bg-destructive/5 px-4 py-3"
           >
             <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
             <p className="text-sm text-destructive leading-relaxed">{dataError}</p>
@@ -472,7 +472,7 @@ const CustomPortfolioBuilder = ({ period = DEFAULT_PERIOD }: { period?: TimePeri
             className="space-y-5"
           >
             {windowNote && (
-              <div className="flex items-start gap-2.5 rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3">
+              <div className="flex items-start gap-2.5 rounded-none border border-amber-500/30 bg-amber-500/5 px-4 py-3">
                 <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
                 <p className="text-xs text-muted-foreground leading-relaxed">{windowNote}</p>
               </div>
@@ -499,7 +499,7 @@ const CustomPortfolioBuilder = ({ period = DEFAULT_PERIOD }: { period?: TimePeri
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="rounded-xl border border-border bg-secondary/50 p-5"
+              className="rounded-none border-2 border-foreground bg-secondary/50 p-5"
             >
               <div className="flex items-start gap-3">
                 <Info className="h-4 w-4 text-primary mt-0.5 shrink-0" />
@@ -600,7 +600,7 @@ function CustomEvaluation({ result, assets, spy, riskFreeAnnual }: { result: Bac
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="rounded-xl border border-border bg-card p-5"
+          className="rounded-none border-2 border-foreground bg-card p-5"
         >
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-sm font-medium text-foreground">Portfolio Profile</h3>
@@ -630,7 +630,7 @@ function CustomEvaluation({ result, assets, spy, riskFreeAnnual }: { result: Bac
         </motion.div>
 
         {/* AI Feedback */}
-        <div className="rounded-xl border border-border bg-card p-5 min-h-[320px] flex flex-col">
+        <div className="rounded-none border-2 border-foreground bg-card p-5 min-h-[320px] flex flex-col">
           <div className="flex items-center justify-between mb-3">
             <span className="text-sm font-medium text-foreground">AI Insights</span>
             <button onClick={fetchEvaluation} disabled={isLoading} className="text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50">
@@ -645,7 +645,7 @@ function CustomEvaluation({ result, assets, spy, riskFreeAnnual }: { result: Bac
                 </motion.div>
               )}
               {error && !feedback && (
-                <motion.div key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
+                <motion.div key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="rounded-none bg-destructive/10 p-3 text-sm text-destructive">
                   {error} <button onClick={fetchEvaluation} className="ml-2 underline hover:no-underline">Retry</button>
                 </motion.div>
               )}

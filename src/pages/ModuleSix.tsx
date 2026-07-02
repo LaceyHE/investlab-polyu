@@ -121,7 +121,7 @@ const ModuleSix = () => {
           <button
             onClick={() => { setCompleted(true); (markComplete("module_complete", "module-6"), completeModule("module-6")); }}
             disabled={!reflectionAnswer.trim()}
-            className="rounded-xl bg-gradient-warm px-6 py-3 text-sm font-semibold text-primary-foreground disabled:opacity-40"
+            className="rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-accent-foreground disabled:opacity-40"
           >
             Complete Learning Path
           </button>

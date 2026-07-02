@@ -157,7 +157,7 @@ const AICommentary = ({
   const sections = commentary ? parseCommentarySections(commentary) : [];
 
   return (
-    <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
+    <div className="rounded-none border border-primary/20 bg-primary/5 p-4">
       <button
         onClick={() => setIsExpanded(!isExpanded)}
         className="flex items-center justify-between w-full mb-2"
@@ -179,7 +179,7 @@ const AICommentary = ({
             {!commentary && !isLoading && !error && (
               <button
                 onClick={fetchCommentary}
-                className="w-full rounded-lg bg-gradient-to-r from-primary to-primary/80 px-4 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity"
+                className="w-full rounded-none bg-gradient-to-r from-primary to-primary/80 px-4 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity"
               >
                 What's happening here?
               </button>
@@ -196,7 +196,7 @@ const AICommentary = ({
             )}
 
             {error && (
-              <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
+              <div className="rounded-none bg-destructive/10 p-3 text-sm text-destructive">
                 {error}
                 <button onClick={fetchCommentary} className="ml-2 underline hover:no-underline">Retry</button>
               </div>
@@ -212,7 +212,7 @@ const AICommentary = ({
                       initial={{ opacity: 0, y: 5 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.1 }}
-                      className={`rounded-lg border p-3 ${section.colorClass}`}
+                      className={`rounded-none border p-3 ${section.colorClass}`}
                     >
                       <div className="flex items-center gap-1.5 mb-1.5">
                         <SectionIcon className="h-3.5 w-3.5" />

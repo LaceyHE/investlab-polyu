@@ -30,7 +30,7 @@ export default function DotComStockCard({ stock, positionPct, onBuy, onSell, can
   return (
     <motion.div
       layout
-      className="rounded-xl border border-border bg-card p-4 hover:shadow-sm transition-all"
+      className="rounded-none border-2 border-foreground bg-card p-4 hover:shadow-sm transition-all"
     >
       {/* Header */}
       <div className="flex items-start justify-between mb-2">
@@ -95,14 +95,14 @@ export default function DotComStockCard({ stock, positionPct, onBuy, onSell, can
         <button
           onClick={onBuy}
           disabled={!canBuy}
-          className="flex-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-xs font-semibold py-2 hover:bg-emerald-500/20 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          className="flex-1 rounded-none bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-xs font-semibold py-2 hover:bg-emerald-500/20 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
         >
           Buy 10%
         </button>
         <button
           onClick={onSell}
           disabled={positionPct === 0}
-          className="flex-1 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-semibold py-2 hover:bg-red-500/20 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          className="flex-1 rounded-none bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-semibold py-2 hover:bg-red-500/20 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
         >
           Sell
         </button>

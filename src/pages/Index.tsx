@@ -13,6 +13,7 @@ const hubCards = [
     title: "Market Literacy",
     desc: "AI-powered financial news intelligence — real-time sentiment analysis, market signals, and financial statement insights.",
     cta: "Explore Signals",
+    accent: "var(--accent-blue)",
   },
   {
     to: "/learning-path",
@@ -20,6 +21,7 @@ const hubCards = [
     title: "Learning Path",
     desc: "Master 6 modules of strategy-driven investing — from price illusions to full portfolio thinking.",
     cta: "Start Learning",
+    accent: "var(--accent-violet)",
   },
   {
     to: "/causal-lab",
@@ -27,6 +29,7 @@ const hubCards = [
     title: "CausalLab",
     desc: "Explore cause-and-effect chains in markets — trace how rate hikes, oil shocks, and earnings surprises propagate.",
     cta: "Open Lab",
+    accent: "var(--accent-orange)",
   },
   {
     to: "/sandbox",
@@ -34,6 +37,7 @@ const hubCards = [
     title: "Sandbox",
     desc: "Build a real portfolio hands-on. Back-test your strategies with historical data across market regimes.",
     cta: "Open Sandbox",
+    accent: "var(--accent-yellow)",
   },
   {
     to: "/scenarios",
@@ -41,6 +45,7 @@ const hubCards = [
     title: "Scenarios",
     desc: "Predict and stress-test the market. Simulate crises — dot-com busts, flash crashes — and see how your decisions hold up.",
     cta: "Run Scenarios",
+    accent: "var(--accent-pink)",
   },
   {
     to: "/account",
@@ -48,6 +53,7 @@ const hubCards = [
     title: "Investor Hub",
     desc: "Track your XP, badges, streak, and investment ability analysis all in one place.",
     cta: "View Profile",
+    accent: "var(--accent-green)",
   },
 ];
 
@@ -66,18 +72,30 @@ const Index = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
-              className="mb-8"
+              className="mb-10"
             >
-              <p className="text-sm font-medium uppercase tracking-[0.2em] text-primary mb-2">
+              <span className="inline-block -rotate-2 rounded-none border-2 border-foreground bg-[var(--accent-green)] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-black shadow-[2px_2px_0_hsl(var(--foreground))]">
                 Education-First Investing
-              </p>
-              <h1 className="font-serif text-3xl md:text-4xl text-foreground mb-3">
-                Learn <em className="text-gradient-warm not-italic">why</em> strategies work
+              </span>
+              <h1 className="mt-5 font-serif text-4xl md:text-6xl font-bold uppercase leading-[0.95] tracking-tight text-foreground">
+                Learn <span className="bg-[var(--accent-yellow)] px-2 text-black">why</span> strategies work
               </h1>
-              <p className="text-muted-foreground max-w-xl">
+              <p className="mt-4 text-muted-foreground max-w-xl normal-case">
                 A structured path that teaches you to think in strategies and environments.
               </p>
+              <div className="mt-6 h-2 w-full max-w-md border-2 border-foreground bg-[var(--accent-blue)]" />
             </motion.div>
+
+            {/* Scrolling tape line — brutalist/pixel signature */}
+            <div className="-rotate-1 border-y-2 border-foreground bg-[var(--accent-yellow)] text-black overflow-hidden mb-8">
+              <div className="flex w-max animate-[marquee_20s_linear_infinite] gap-6 py-2 whitespace-nowrap text-sm font-bold uppercase tracking-wide">
+                {Array.from({ length: 10 }).map((_, i) => (
+                  <span key={i} className="inline-flex items-center gap-6">
+                    Learn Why Strategies Work <span aria-hidden>★</span> Think In Environments <span aria-hidden>★</span> Invest Smarter <span aria-hidden>★</span>
+                  </span>
+                ))}
+              </div>
+            </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {hubCards.map((card, i) => (
@@ -89,10 +107,13 @@ const Index = () => {
                 >
                   <Link
                     to={card.to}
-                    className="group flex flex-col justify-between rounded-xl border border-border bg-gradient-card p-5 h-full transition-all hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5"
+                    className="group flex flex-col justify-between rounded-none border-2 border-foreground bg-card p-5 h-full transition-all duration-100 shadow-[3px_3px_0_hsl(var(--foreground))] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0_hsl(var(--foreground))]"
                   >
                     <div>
-                      <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors group-hover:bg-primary/20">
+                      <div
+                        className="mb-3 flex h-10 w-10 items-center justify-center rounded-none border-2 border-foreground text-foreground"
+                        style={{ backgroundColor: card.accent }}
+                      >
                         {card.icon}
                       </div>
                       <h2 className="font-serif text-lg text-foreground mb-1">{card.title}</h2>
@@ -108,8 +129,8 @@ const Index = () => {
             </div>
           </div>
 
-          {/* Right sidebar */}
-          <div className="hidden lg:block flex-shrink-0">
+          {/* Right sidebar — divided from main content with a hard pixel rule */}
+          <div className="hidden lg:block flex-shrink-0 border-l-2 border-foreground pl-8">
             <GamificationSidebar />
           </div>
         </div>

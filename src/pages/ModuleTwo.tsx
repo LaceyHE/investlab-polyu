@@ -212,7 +212,7 @@ const ModuleTwo = () => {
               <p className="text-muted-foreground mb-6">Choose a strategy, and we'll assign a random environment. Predict the outcome, then see the AI explanation.</p>
 
               {!exerciseEnv && (
-                <button onClick={startExercise} className="rounded-xl bg-gradient-warm px-6 py-3 text-sm font-semibold text-primary-foreground">
+                <button onClick={startExercise} className="rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-accent-foreground">
                   Start Exercise
                 </button>
               )}
@@ -255,7 +255,7 @@ const ModuleTwo = () => {
                       <button
                         onClick={() => { setRevealed(true); completeSection(1); }}
                         disabled={!prediction.trim()}
-                        className="mt-3 rounded-xl bg-gradient-warm px-6 py-3 text-sm font-semibold text-primary-foreground disabled:opacity-40"
+                        className="mt-3 rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-accent-foreground disabled:opacity-40"
                       >
                         Reveal Outcome
                       </button>
@@ -298,7 +298,7 @@ const ModuleTwo = () => {
 
               <button
                 onClick={() => completeSection(2)}
-                className="mt-8 rounded-xl bg-gradient-warm px-6 py-3 text-sm font-semibold text-primary-foreground"
+                className="mt-8 rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-accent-foreground"
               >
                 <CheckCircle2 className="h-4 w-4 inline mr-2" />
                 Mark Reflection Complete
@@ -316,7 +316,7 @@ const ModuleTwo = () => {
             to="/module/3"
             className={`group inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold transition-all ${
               completedSections.length >= 3
-                ? "bg-gradient-warm text-primary-foreground hover:shadow-lg hover:shadow-primary/20"
+                ? "bg-accent text-accent-foreground hover:shadow-lg hover:shadow-primary/20"
                 : "bg-secondary text-muted-foreground cursor-not-allowed"
             }`}
             onClick={(e) => { if (completedSections.length < 3) { e.preventDefault(); } else { (markComplete("module_complete", "module-2"), completeModule("module-2")); } }}

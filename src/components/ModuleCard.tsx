@@ -14,10 +14,10 @@ interface ModuleCardProps {
 }
 
 const statusStyles = {
-  locked: "opacity-50 cursor-not-allowed border-border",
-  available: "border-border hover:border-muted-foreground/40 cursor-pointer",
-  active: "border-primary/40 glow-warm cursor-pointer",
-  completed: "border-teal/30 cursor-pointer",
+  locked: "opacity-50 cursor-not-allowed shadow-none",
+  available: "cursor-pointer hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0_hsl(var(--foreground))]",
+  active: "cursor-pointer bg-accent/10 hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0_hsl(var(--foreground))]",
+  completed: "cursor-pointer bg-teal/5 hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0_hsl(var(--foreground))]",
 };
 
 const ModuleCard = ({ index, title, description, icon, status, to = "#", delay = 0 }: ModuleCardProps) => {
@@ -26,11 +26,11 @@ const ModuleCard = ({ index, title, description, icon, status, to = "#", delay =
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: delay * 0.1, duration: 0.5 }}
-      className={`group relative rounded-xl border bg-gradient-card p-6 transition-all duration-300 ${statusStyles[status]}`}
+      className={`group relative rounded-none border-2 border-foreground bg-card p-6 shadow-[3px_3px_0_hsl(var(--foreground))] transition-all duration-100 ${statusStyles[status]}`}
     >
       <div className="flex items-start justify-between">
         <div className="flex items-start gap-4">
-          <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
+          <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-none border-2 border-foreground ${
             status === "completed" ? "bg-teal/15 text-teal" :
             status === "active" ? "bg-primary/15 text-primary" :
             "bg-secondary text-muted-foreground"

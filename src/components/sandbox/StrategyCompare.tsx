@@ -113,7 +113,7 @@ const StrategyCompare = ({
   const availableStrategies = strategies.filter(s => s.id !== 'custom' && s.id !== currentStrategy);
 
   return (
-    <div className="rounded-xl border border-border bg-card overflow-hidden">
+    <div className="rounded-none border-2 border-foreground bg-card overflow-hidden">
       <button
         onClick={() => setOpen(o => !o)}
         className="w-full flex items-center justify-between p-4 hover:bg-secondary/50 transition-colors"
@@ -149,7 +149,7 @@ const StrategyCompare = ({
                     <button
                       key={s.id}
                       onClick={() => setCompareStrategy(s.id as StrategyType)}
-                      className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs transition-all ${
+                      className={`flex items-center gap-1.5 rounded-none border px-3 py-1.5 text-xs transition-all ${
                         compareStrategy === s.id
                           ? 'border-primary bg-primary/10 text-foreground'
                           : 'border-border text-muted-foreground hover:border-muted-foreground/40 hover:text-foreground'
@@ -164,7 +164,7 @@ const StrategyCompare = ({
 
               {/* Preset rationale */}
               {compareStrategy && activePreset?.label && (
-                <div className="flex items-start gap-2 rounded-lg bg-secondary/50 px-3 py-2">
+                <div className="flex items-start gap-2 rounded-none bg-secondary/50 px-3 py-2">
                   <Info className="h-3.5 w-3.5 text-primary mt-0.5 shrink-0" />
                   <p className="text-[11px] text-muted-foreground">
                     <span className="font-medium text-foreground">{compareDef?.name}</span>

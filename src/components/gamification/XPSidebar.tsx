@@ -27,7 +27,7 @@ export function XPBar({ compact = false }: { compact?: boolean }) {
   }
 
   return (
-    <div className="p-4 rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm">
+    <div className="p-4 rounded-none border-2 border-foreground bg-card shadow-[2px_2px_0_hsl(var(--foreground))]">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2.5">
           <div className="w-10 h-10 rounded-full flex items-center justify-center text-lg shadow-md" style={{ background: `linear-gradient(135deg, ${current.color}cc, ${current.color})`, boxShadow: `0 0 16px ${current.color}40` }}>
@@ -69,7 +69,7 @@ export function DailyXPBar() {
   const done = earned >= target;
 
   return (
-    <div className="p-3 rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm">
+    <div className="p-3 rounded-none border-2 border-foreground bg-card shadow-[2px_2px_0_hsl(var(--foreground))]">
       <div className="flex items-center justify-between mb-2">
         <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">Daily Goal</span>
         <span className={`text-xs font-bold tabular-nums ${done ? 'text-emerald-500' : 'text-gray-500'}`}>
@@ -91,7 +91,7 @@ export function StreakWidget() {
   const days = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
   const today = new Date().getDay();
   return (
-    <div className="p-3 rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm">
+    <div className="p-3 rounded-none border-2 border-foreground bg-card shadow-[2px_2px_0_hsl(var(--foreground))]">
       <div className="flex items-center justify-between mb-2.5">
         <div className="flex items-center gap-1.5">
           <Flame className="w-4 h-4 text-orange-500" />
@@ -134,27 +134,27 @@ export function BadgeDisplay({ compact = false, filterCat }: { compact?: boolean
         {visible.map(badge => {
           const isEarned = state.earnedBadgeIds.includes(badge.id);
           return (
-            <motion.div key={badge.id} whileHover={{ scale: 1.1 }} className="group relative" title={`${badge.name}: ${badge.desc}`}>
-              <div className={`flex flex-col items-center gap-1 p-2 rounded-xl text-center cursor-default ${isEarned ? 'bg-gradient-to-br from-violet-50 to-indigo-50 dark:from-violet-950 dark:to-indigo-950 border border-violet-200 dark:border-violet-800' : 'bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 opacity-50'}`}>
-                <span className="text-xl">{badge.icon}</span>
-                <span className="text-[9px] font-medium leading-tight text-center text-gray-600 dark:text-gray-400">{badge.name}</span>
+            <motion.div key={badge.id} whileHover={{ scale: 1.06 }} className="group relative" title={`${badge.name}: ${badge.desc}`}>
+              <div className={`flex flex-col items-center gap-1 p-2 rounded-none text-center cursor-default transition-all ${isEarned ? 'border-2 border-foreground bg-primary/10 shadow-[2px_2px_0_hsl(var(--foreground))]' : 'border-2 border-foreground/25 bg-muted opacity-60'}`}>
+                <span className={`text-xl ${isEarned ? '' : 'grayscale opacity-70'}`}>{badge.icon}</span>
+                <span className={`text-[9px] font-bold leading-tight text-center ${isEarned ? 'text-foreground' : 'text-muted-foreground'}`}>{badge.name}</span>
               </div>
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-10 hidden group-hover:block min-w-[140px] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-2.5 shadow-xl text-left pointer-events-none">
-                <div className="text-xs font-bold mb-0.5">{badge.name}</div>
-                <div className="text-[10px] text-gray-500 mb-1">{badge.desc}</div>
-                <div className="text-[10px] font-semibold text-violet-600">+{badge.xp} XP bonus</div>
-                {isEarned && <div className="text-[10px] text-green-600 mt-0.5">✓ Earned</div>}
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-10 hidden group-hover:block min-w-[140px] rounded-none border-2 border-foreground bg-card p-2.5 shadow-[3px_3px_0_hsl(var(--foreground))] text-left pointer-events-none">
+                <div className="text-xs font-bold mb-0.5 text-foreground">{badge.name}</div>
+                <div className="text-[10px] text-muted-foreground mb-1">{badge.desc}</div>
+                <div className="text-[10px] font-semibold text-primary">+{badge.xp} XP bonus</div>
+                {isEarned && <div className="text-[10px] font-semibold text-teal mt-0.5">✓ Earned</div>}
               </div>
             </motion.div>
           );
         })}
       </div>
       {compact && sorted.length > 6 && (
-        <button onClick={() => setExpanded(e => !e)} className="mt-2 w-full flex items-center justify-center gap-1 text-[11px] text-gray-400 hover:text-violet-600 transition-colors">
+        <button onClick={() => setExpanded(e => !e)} className="mt-2 w-full flex items-center justify-center gap-1 text-[11px] font-semibold text-muted-foreground hover:text-primary transition-colors">
           {expanded ? <><ChevronUp className="w-3 h-3" /> Show less</> : <><ChevronDown className="w-3 h-3" /> +{sorted.length - 6} more</>}
         </button>
       )}
-      <div className="mt-2 text-center text-[10px] text-gray-400">{earned.length} / {badges.length} earned</div>
+      <div className="mt-2 text-center text-[10px] font-medium text-muted-foreground">{earned.length} / {badges.length} earned</div>
     </div>
   );
 }
@@ -168,7 +168,7 @@ export function GamificationSidebar() {
   return (
     <div className="flex flex-col gap-4 w-64 flex-shrink-0">
       {/* Avatar header */}
-      <div className="p-3 rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm">
+      <div className="p-3 rounded-none border-2 border-foreground bg-card shadow-[2px_2px_0_hsl(var(--foreground))]">
         <div className="flex items-center gap-3">
           <div className="relative">
             <AvatarDisplay size="md" showRing />
@@ -187,7 +187,7 @@ export function GamificationSidebar() {
       <XPBar />
       <StreakWidget />
 
-      <div className="p-3 rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm">
+      <div className="p-3 rounded-none border-2 border-foreground bg-card shadow-[2px_2px_0_hsl(var(--foreground))]">
         <div className="flex items-center gap-1.5 mb-3">
           <Trophy className="w-4 h-4 text-yellow-500" />
           <span className="text-sm font-bold">Badges</span>

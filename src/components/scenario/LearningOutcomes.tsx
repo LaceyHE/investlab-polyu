@@ -19,7 +19,7 @@ const LearningOutcomes = ({ scenario }: LearningOutcomesProps) => {
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="rounded-xl border border-border bg-card p-5"
+        className="rounded-none border-2 border-foreground bg-card p-5"
       >
         <h4 className="text-sm font-medium text-foreground mb-2 flex items-center gap-2">
           <AlertTriangle className="h-3.5 w-3.5 text-warm" />
@@ -34,7 +34,7 @@ const LearningOutcomes = ({ scenario }: LearningOutcomesProps) => {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="rounded-xl border border-border bg-card p-5"
+        className="rounded-none border-2 border-foreground bg-card p-5"
       >
         <h4 className="text-sm font-medium text-foreground mb-2 flex items-center gap-2">
           <Lightbulb className="h-3.5 w-3.5 text-teal" />
@@ -54,7 +54,7 @@ const LearningOutcomes = ({ scenario }: LearningOutcomesProps) => {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
-        className="rounded-xl border border-primary/20 bg-primary/5 p-5"
+        className="rounded-none border border-primary/20 bg-primary/5 p-5"
       >
         <h4 className="text-sm font-medium text-foreground mb-2 flex items-center gap-2">
           <HelpCircle className="h-3.5 w-3.5 text-primary" />

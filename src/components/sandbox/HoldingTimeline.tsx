@@ -46,7 +46,7 @@ const HoldingTimeline = ({ currentHolding, holdingHistory, startDate, endDate }:
   const totalDays = Object.values(timeByAsset).reduce((a, b) => a + b, 0);
 
   return (
-    <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+    <div className="rounded-none border-2 border-foreground bg-card p-4 space-y-3">
       {/* Current holding badge */}
       <div className="flex items-center justify-between">
         <p className="text-xs font-medium text-foreground">Holdings Timeline</p>
@@ -65,7 +65,7 @@ const HoldingTimeline = ({ currentHolding, holdingHistory, startDate, endDate }:
       </div>
 
       {/* Timeline bar */}
-      <div className="relative h-8 rounded-lg overflow-hidden bg-secondary flex">
+      <div className="relative h-8 rounded-none overflow-hidden bg-secondary flex">
         {segments.map((seg, i) => (
           <div
             key={i}

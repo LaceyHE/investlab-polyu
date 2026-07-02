@@ -80,14 +80,14 @@ const MarketChart = ({
 
   if (visibleData.length === 0) {
     return (
-      <div className="rounded-xl border border-border bg-card p-8 text-center text-muted-foreground">
+      <div className="rounded-none border-2 border-foreground bg-card p-8 text-center text-muted-foreground">
         Loading chart data...
       </div>
     );
   }
 
   return (
-    <div className="rounded-xl border border-border bg-card p-4">
+    <div className="rounded-none border-2 border-foreground bg-card p-4">
       {/* Controls */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex gap-1">
@@ -95,7 +95,7 @@ const MarketChart = ({
             <button
               key={agg}
               onClick={() => onAggregationChange(agg)}
-              className={`px-3 py-1 text-xs rounded-lg transition-colors ${
+              className={`px-3 py-1 text-xs rounded-none transition-colors ${
                 aggregation === agg ? 'bg-secondary text-foreground' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
@@ -106,7 +106,7 @@ const MarketChart = ({
         <div className="flex gap-2">
           <button
             onClick={onToggleDrawdown}
-            className={`px-3 py-1 text-xs rounded-lg transition-colors ${
+            className={`px-3 py-1 text-xs rounded-none transition-colors ${
               showDrawdown ? 'bg-destructive/20 text-destructive' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
@@ -114,7 +114,7 @@ const MarketChart = ({
           </button>
           <button
             onClick={onToggleVolatility}
-            className={`px-3 py-1 text-xs rounded-lg transition-colors ${
+            className={`px-3 py-1 text-xs rounded-none transition-colors ${
               showVolatility ? 'bg-warm/20 text-warm' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
@@ -123,7 +123,7 @@ const MarketChart = ({
           {onToggleSharpe && (
             <button
               onClick={onToggleSharpe}
-              className={`px-3 py-1 text-xs rounded-lg transition-colors ${
+              className={`px-3 py-1 text-xs rounded-none transition-colors ${
                 showSharpe ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'
               }`}
             >

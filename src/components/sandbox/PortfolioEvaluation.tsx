@@ -65,7 +65,7 @@ const PortfolioEvaluation = ({ result, strategy, strategyName, param, paramLabel
 
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
-      <div className="rounded-xl border border-border bg-card p-5 min-h-[160px] flex flex-col">
+      <div className="rounded-none border-2 border-foreground bg-card p-5 min-h-[160px] flex flex-col">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Brain className="h-4 w-4 text-primary" />
@@ -92,7 +92,7 @@ const PortfolioEvaluation = ({ result, strategy, strategyName, param, paramLabel
             )}
             {error && !feedback && (
               <motion.div key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive"
+                className="rounded-none bg-destructive/10 p-3 text-sm text-destructive"
               >
                 {error}
                 <button onClick={fetchEvaluation} className="ml-2 underline hover:no-underline">Retry</button>

@@ -58,7 +58,7 @@ const AnalyticsPanel = ({ metrics, positions = [], stocks = [] }: AnalyticsPanel
   ];
 
   return (
-    <div className="rounded-xl border border-border bg-card p-4">
+    <div className="rounded-none border-2 border-foreground bg-card p-4">
       <h3 className="font-serif text-base text-foreground mb-3">Analytics</h3>
       <TooltipProvider delayDuration={300}>
         <div className="grid grid-cols-2 gap-2">
@@ -69,7 +69,7 @@ const AnalyticsPanel = ({ metrics, positions = [], stocks = [] }: AnalyticsPanel
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: i * 0.05 }}
-                  className="rounded-lg bg-secondary/50 p-3 cursor-help"
+                  className="rounded-none bg-secondary/50 p-3 cursor-help"
                 >
                   <div className="flex items-center gap-1.5 mb-1">
                     <item.icon className="h-3 w-3 text-muted-foreground" />

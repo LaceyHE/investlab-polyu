@@ -60,12 +60,12 @@ export default function DotComSummary({ nav, totalReturn, holdings, tradeLog, al
 
       {/* Key metrics */}
       <div className="grid grid-cols-2 gap-4">
-        <div className="rounded-xl border border-border bg-card p-5 text-center">
+        <div className="rounded-none border-2 border-foreground bg-card p-5 text-center">
           <TrendingDown className="h-5 w-5 text-red-500 mx-auto mb-2" />
           <p className="text-xs text-muted-foreground mb-1">Nasdaq Peak to Trough</p>
           <p className="text-2xl font-mono font-bold text-red-500">{nasdaqReturn}%</p>
         </div>
-        <div className="rounded-xl border border-border bg-card p-5 text-center">
+        <div className="rounded-none border-2 border-foreground bg-card p-5 text-center">
           <BarChart3 className="h-5 w-5 text-primary mx-auto mb-2" />
           <p className="text-xs text-muted-foreground mb-1">Your Portfolio</p>
           <p className={`text-2xl font-mono font-bold ${totalReturn >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
@@ -75,11 +75,11 @@ export default function DotComSummary({ nav, totalReturn, holdings, tradeLog, al
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <div className="rounded-xl border border-border bg-card p-5 text-center">
+        <div className="rounded-none border-2 border-foreground bg-card p-5 text-center">
           <p className="text-xs text-muted-foreground mb-1">Final NAV</p>
           <p className="text-xl font-mono font-bold text-foreground">${nav.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
         </div>
-        <div className="rounded-xl border border-border bg-card p-5 text-center">
+        <div className="rounded-none border-2 border-foreground bg-card p-5 text-center">
           <p className="text-xs text-muted-foreground mb-1">Survival Score</p>
           <p className={`text-xl font-bold ${survivalScore === 'Excellent' ? 'text-emerald-500' : survivalScore === 'Good' ? 'text-amber-500' : 'text-red-500'}`}>
             {survivalScore}
@@ -90,7 +90,7 @@ export default function DotComSummary({ nav, totalReturn, holdings, tradeLog, al
       {/* Best / Worst */}
       {best && worst && sorted.length > 1 && (
         <div className="grid grid-cols-2 gap-4">
-          <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-5">
+          <div className="rounded-none border border-emerald-500/20 bg-emerald-500/5 p-5">
             <Trophy className="h-4 w-4 text-emerald-500 mb-2" />
             <p className="text-xs text-muted-foreground mb-1">Best Holding</p>
             <p className="font-mono font-bold text-foreground">{best.ticker}</p>
@@ -98,7 +98,7 @@ export default function DotComSummary({ nav, totalReturn, holdings, tradeLog, al
               {best.return >= 0 ? '+' : ''}{best.return.toFixed(0)}%
             </p>
           </div>
-          <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-5">
+          <div className="rounded-none border border-red-500/20 bg-red-500/5 p-5">
             <AlertTriangle className="h-4 w-4 text-red-500 mb-2" />
             <p className="text-xs text-muted-foreground mb-1">Worst Holding</p>
             <p className="font-mono font-bold text-foreground">{worst.ticker}</p>
@@ -110,7 +110,7 @@ export default function DotComSummary({ nav, totalReturn, holdings, tradeLog, al
       )}
 
       {/* Reflection */}
-      <div className="rounded-xl border border-border bg-card p-8 text-center space-y-4">
+      <div className="rounded-none border-2 border-foreground bg-card p-8 text-center space-y-4">
         <blockquote className="font-serif text-lg text-foreground italic leading-relaxed">
           "Even profitable companies fell—not because they stopped earning,<br />
           but because the price investors were willing to pay collapsed."
@@ -121,7 +121,7 @@ export default function DotComSummary({ nav, totalReturn, holdings, tradeLog, al
         </p>
       </div>
 
-      <div className="rounded-xl border border-primary/20 bg-primary/5 p-6 text-center">
+      <div className="rounded-none border border-primary/20 bg-primary/5 p-6 text-center">
         <p className="text-sm text-muted-foreground mb-2">
           Total trades: {tradeLog.length} · Months simulated: 46
         </p>
