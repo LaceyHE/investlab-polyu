@@ -1,30 +1,29 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
-  Award, BookOpen, Clock, CheckCircle2, Circle, LogOut, FlaskConical,
-  Compass, Lightbulb, Eye, BarChart2, Shield, Target, TrendingUp,
-  ChevronRight,
+  Award, BookOpen, Clock, CheckCircle2, Circle, LogOut, LogIn, FlaskConical,
+  Compass, Lightbulb, Eye, TrendingUp, ChevronRight, Pencil,
+  Shuffle, BarChart3, Crosshair, PieChart, ClipboardCheck,
 } from "lucide-react";
-import {
-  Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
-  ResponsiveContainer,
-} from "recharts";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserProgress } from "@/hooks/useUserProgress";
+import { useGamification, BADGES, CORE_MODULE_IDS } from "@/contexts/GamificationContext";
+import { AvatarDisplay, AvatarPicker } from "@/components/gamification/AvatarSystem";
+import { DailyXPBar, XPBar, StreakWidget, BadgeDisplay } from "@/components/gamification/XPSidebar";
+import { AbilityRadarWidget } from "@/components/gamification/AbilityRadarWidget";
 import AppLayout from "@/components/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import ProgressBar from "@/components/ProgressBar";
 import { Button } from "@/components/ui/button";
-import { useEffect } from "react";
 
 const moduleList = [
-  { id: 1, title: "The Price Illusion" },
-  { id: 2, title: "Strategy Foundations" },
-  { id: 3, title: "Environment Reading" },
-  { id: 4, title: "Portfolio Construction" },
-  { id: 5, title: "Behavioral Traps" },
-  { id: 6, title: "Full Integration" },
+  { id: 1, title: "Why Price Movement Is Misleading", icon: TrendingUp },
+  { id: 2, title: "Strategy ≠ Right or Wrong", icon: Shuffle },
+  { id: 3, title: "Entering Real Stock Universes", icon: BarChart3 },
+  { id: 4, title: "Strategy-Bound Decisions", icon: Crosshair },
+  { id: 5, title: "Portfolio-Level Thinking", icon: PieChart },
+  { id: 6, title: "Reflection & Feedback", icon: ClipboardCheck },
 ];
 
 const knowledgeLabels: Record<string, string> = {
@@ -36,14 +35,6 @@ const knowledgeLabels: Record<string, string> = {
   "risk-exposure": "Risk Exposure",
   "behavioral-reflection": "Behavioral Reflection",
 };
-
-type LevelTier = { label: string; color: string; bg: string; border: string; ring: string };
-function getLevel(completedCount: number): LevelTier {
-  if (completedCount === 6)  return { label: "Graduate",  color: "text-teal",            bg: "bg-teal/10",    border: "border-teal/30",    ring: "ring-teal/40"    };
-  if (completedCount >= 4)   return { label: "Strategist", color: "text-warm",            bg: "bg-warm/10",    border: "border-warm/30",    ring: "ring-warm/40"    };
-  if (completedCount >= 2)   return { label: "Explorer",   color: "text-primary",         bg: "bg-primary/10", border: "border-primary/30", ring: "ring-primary/40" };
-  return                            { label: "Learner",    color: "text-muted-foreground", bg: "bg-secondary", border: "border-border",     ring: "ring-border"     };
-}
 
 function formatActivityLabel(record: {
   activity_type: string;
@@ -83,33 +74,25 @@ function getActivityIcon(type: string) {
   }
 }
 
-const badgeDefs = [
-  { label: "First Module",      description: "Complete your first module",      icon: BookOpen,  check: (c: number)                                       => c >= 1 },
-  { label: "Scenario Runner",   description: "Run your first simulation",       icon: Compass,   check: (_c: number, h: (t: string) => boolean)             => h("scenario_run") },
-  { label: "Sandbox Explorer",  description: "Back-test a strategy",            icon: FlaskConical, check: (_c: number, h: (t: string) => boolean)          => h("sandbox_backtest") },
-  { label: "Strategy Thinker",  description: "Complete 3 modules",              icon: Target,    check: (c: number)                                       => c >= 3 },
-  { label: "Portfolio Architect",description: "Build a custom portfolio",       icon: BarChart2, check: (_c: number, h: (t: string) => boolean)             => h("sandbox_custom") },
-  { label: "History Student",   description: "Explore all 4 scenarios",        icon: Clock,     check: (_c: number, _h: (t: string) => boolean, us: number) => us >= 4 },
-  { label: "Risk Aware",        description: "Survive a stress-test scenario",  icon: Shield,    check: (_c: number, h: (t: string) => boolean)             => h("scenario_run") },
-  { label: "Full Graduate",     description: "Complete all 6 modules",         icon: Award,     check: (c: number)                                       => c === 6 },
-];
-
 const Account = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading, signOut } = useAuth();
   const {
-    completedModules, hasActivity, getActivities, activityCount,
+    completedModules, getActivities, activityCount,
     recentActivities,
   } = useUserProgress();
+  const { state, levelInfo, currentAvatar } = useGamification();
+  const [pickerOpen, setPickerOpen] = useState(false);
 
-  useEffect(() => {
-    if (!authLoading && !user) navigate("/auth", { replace: true });
-  }, [authLoading, user, navigate]);
+  if (authLoading) return null;
 
-  if (authLoading || !user) return null;
+  const displayName = state.displayName || (user?.user_metadata?.display_name as string) || user?.email?.split("@")[0] || "Investor";
 
-  const displayName = (user.user_metadata?.display_name as string) || user.email?.split("@")[0] || "Investor";
-  const initials = displayName.slice(0, 2).toUpperCase();
+  // A module counts as done if EITHER the cross-device Supabase log or this browser's local
+  // gamification state says so — keeps the Hub in sync with /learning-path (which reads only
+  // the local state) without ever showing less progress than a user has already made.
+  const isModuleDone = (id: number) =>
+    completedModules.includes(id) || state.completedModuleIds.includes(`module-${id}`);
 
   const modules = moduleList.map((m) => {
     const viewRecord    = getActivities("module_view").find((p) => p.activity_id === `module-${m.id}`);
@@ -117,31 +100,40 @@ const Account = () => {
     return {
       ...m,
       visited:   !!viewRecord,
-      completed: completedModules.includes(m.id),
+      completed: isModuleDone(m.id),
       date:      completeRecord?.created_at || viewRecord?.created_at || null,
     };
   });
 
   const completedCount  = modules.filter((m) => m.completed).length;
-  const progressPct     = Math.round((completedCount / modules.length) * 100);
-  const level           = getLevel(completedCount);
+  const coreCompletedCount = CORE_MODULE_IDS.filter((id) => state.completedModuleIds.includes(id)).length;
 
-  const sandboxRuns     = activityCount("sandbox_backtest");
-  const customRuns      = activityCount("sandbox_custom");
-  const scenarioRuns    = activityCount("scenario_run");
+  // Sandbox/Scenario/Concept counts are tracked in two places (Supabase activity log +
+  // local gamification counters); take the higher of the two so nothing appears to regress.
+  const sandboxCount    = Math.max(activityCount("sandbox_backtest") + activityCount("sandbox_custom"), state.backtestsRun);
+  const scenarioCount   = Math.max(activityCount("scenario_run"), state.scenariosCompleted);
   const knowledgePoints = getActivities("knowledge_point");
-  const uniqueScenarios = new Set(getActivities("scenario_run").map((p) => p.activity_id)).size;
+  const conceptsCount   = Math.max(knowledgePoints.length, state.conceptsLearned);
 
-  const badges     = badgeDefs.map((b) => ({ ...b, earned: b.check(completedCount, hasActivity, uniqueScenarios) }));
-  const earnedCount = badges.filter((b) => b.earned).length;
+  const earnedCount = state.earnedBadgeIds.length;
 
-  const abilityData = [
-    { dimension: "Strategy",    score: Math.min(10, completedCount * 1.2 + sandboxRuns * 0.8) },
-    { dimension: "Risk",        score: Math.min(10, scenarioRuns * 2.5) },
-    { dimension: "Environment", score: Math.min(10, (completedModules.includes(3) ? 4 : 0) + uniqueScenarios * 1.5) },
-    { dimension: "Reflection",  score: Math.min(10, (completedModules.includes(6) ? 4 : 0) + customRuns * 2 + (sandboxRuns > 0 ? 2 : 0)) },
-    { dimension: "Allocation",  score: Math.min(10, (completedModules.includes(4) ? 4 : 0) + customRuns * 3) },
-  ];
+  // Nearest-to-unlock badges — a small, curated set of countable badges to keep users
+  // pointed at their next achievable goal rather than just a flat earned/locked grid.
+  const badgeProgress: Partial<Record<typeof BADGES[number]["id"], { current: number; target: number }>> = {
+    first_module:  { current: coreCompletedCount, target: 1 },
+    halfway:       { current: coreCompletedCount, target: 3 },
+    all_modules:   { current: coreCompletedCount, target: 6 },
+    concept_10:    { current: conceptsCount, target: 10 },
+    backtester:    { current: sandboxCount, target: 5 },
+    crisis_pro:    { current: scenarioCount, target: 4 },
+    streak_3:      { current: state.currentStreak, target: 3 },
+    streak_7:      { current: state.currentStreak, target: 7 },
+  };
+  const nextBadges = BADGES
+    .filter((b) => !state.earnedBadgeIds.includes(b.id) && badgeProgress[b.id])
+    .map((b) => ({ badge: b, ...badgeProgress[b.id]! }))
+    .sort((a, b) => (b.current / b.target) - (a.current / a.target))
+    .slice(0, 3);
 
   const timelineEvents = recentActivities
     .filter((r) => r.activity_type !== "knowledge_point" && r.activity_type !== "module_view")
@@ -150,10 +142,7 @@ const Account = () => {
   return (
     <AppLayout>
       {/* ── Hero ──────────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden border-b border-border">
-        <div className="absolute inset-0 bg-gradient-dark" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[300px] w-[500px] rounded-full bg-primary/5 blur-3xl pointer-events-none" />
-
+      <section className="relative overflow-hidden border-b-2 border-foreground bg-background">
         <div className="container relative z-10 py-10 md:py-14">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -161,31 +150,54 @@ const Account = () => {
             className="flex flex-col md:flex-row md:items-end justify-between gap-6"
           >
             <div className="flex items-center gap-5">
-              <div className={`rounded-full ring-2 ring-offset-2 ring-offset-background ${level.ring}`}>
-                <Avatar className="h-16 w-16">
-                  <AvatarFallback className={`text-lg font-serif ${level.bg} ${level.color}`}>
-                    {initials}
-                  </AvatarFallback>
-                </Avatar>
+              <div className="relative">
+                <AvatarDisplay size="xl" showRing />
+                <button
+                  onClick={() => setPickerOpen(true)}
+                  className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-none border-2 border-foreground bg-primary text-primary-foreground shadow-[2px_2px_0_hsl(var(--foreground))] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all"
+                  title="Change avatar"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                </button>
               </div>
               <div>
                 <div className="flex items-center gap-2 mb-0.5">
                   <h1 className="font-serif text-2xl md:text-3xl text-foreground">{displayName}</h1>
-                  <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${level.bg} ${level.color} ${level.border}`}>
-                    {level.label}
+                  <span
+                    className="inline-flex items-center gap-1 rounded-none border-2 border-foreground px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide shadow-[2px_2px_0_hsl(var(--foreground))]"
+                    style={{ backgroundColor: levelInfo.current.color, color: "white" }}
+                  >
+                    {levelInfo.current.emoji} {levelInfo.current.title}
                   </span>
                 </div>
-                <p className="text-sm text-muted-foreground">{user.email}</p>
+                <p className="text-sm text-muted-foreground">{user ? user.email : "Playing as a guest — progress stays on this device"}</p>
                 <p className="text-xs text-muted-foreground/60 mt-0.5">
-                  {earnedCount}/{badges.length} badges · {completedCount}/6 modules completed
+                  {currentAvatar?.name ?? "No avatar"} · {earnedCount}/{BADGES.length} badges · {completedCount}/6 modules completed
                 </p>
               </div>
             </div>
 
-            <Button variant="outline" size="sm" onClick={() => signOut()} className="gap-2 self-start md:self-auto">
-              <LogOut className="h-4 w-4" /> Sign Out
-            </Button>
+            {user ? (
+              <Button variant="outline" size="sm" onClick={() => signOut()} className="gap-2 self-start md:self-auto rounded-none border-2 border-foreground shadow-[2px_2px_0_hsl(var(--foreground))]">
+                <LogOut className="h-4 w-4" /> Sign Out
+              </Button>
+            ) : (
+              <Button variant="outline" size="sm" onClick={() => navigate("/auth")} className="gap-2 self-start md:self-auto rounded-none border-2 border-foreground shadow-[2px_2px_0_hsl(var(--foreground))]">
+                <LogIn className="h-4 w-4" /> Sign In to Sync
+              </Button>
+            )}
           </motion.div>
+
+          {!user && (
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.05 }}
+              className="mt-6 rounded-none border-2 border-foreground bg-[var(--accent-yellow)] px-4 py-2.5 text-sm text-black shadow-[2px_2px_0_hsl(var(--foreground))]"
+            >
+              Sign in to save progress for every avatar across your devices — your local progress won't be lost.
+            </motion.div>
+          )}
 
           {/* Stat strip */}
           <motion.div
@@ -196,11 +208,11 @@ const Account = () => {
           >
             {[
               { icon: BookOpen,    label: "Modules",   value: `${completedCount}/6`, accent: "text-primary" },
-              { icon: FlaskConical,label: "Backtests", value: String(sandboxRuns + customRuns), accent: "text-warm" },
-              { icon: Compass,     label: "Scenarios", value: String(scenarioRuns), accent: "text-teal" },
-              { icon: Lightbulb,   label: "Insights",  value: String(knowledgePoints.length), accent: "text-primary" },
+              { icon: FlaskConical,label: "Sandbox",   value: String(sandboxCount), accent: "text-warm" },
+              { icon: Compass,     label: "Scenarios", value: String(scenarioCount), accent: "text-teal" },
+              { icon: Lightbulb,   label: "Concepts",  value: String(conceptsCount), accent: "text-primary" },
             ].map((s) => (
-              <div key={s.label} className="rounded-xl border border-border/60 bg-card/60 backdrop-blur-sm px-4 py-3 flex items-center gap-3">
+              <div key={s.label} className="rounded-none border-2 border-foreground bg-card px-4 py-3 flex items-center gap-3 shadow-[2px_2px_0_hsl(var(--foreground))]">
                 <s.icon className={`h-4 w-4 shrink-0 ${s.accent}`} />
                 <div>
                   <p className="text-xs text-muted-foreground leading-none mb-1">{s.label}</p>
@@ -214,25 +226,37 @@ const Account = () => {
 
       {/* ── Main Content ──────────────────────────────────────────── */}
       <div className="container py-8 md:py-12 max-w-5xl space-y-6">
+
+        {/* XP / Daily Goal / Streak */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.12 }}
+          className="grid gap-4 md:grid-cols-3"
+        >
+          <DailyXPBar />
+          <XPBar />
+          <StreakWidget />
+        </motion.div>
+
         <div className="grid gap-6 md:grid-cols-2">
 
           {/* Learning Journey */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
             <Card className="h-full">
               <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <BookOpen className="h-4 w-4 text-primary" /> Learning Journey
-                  </CardTitle>
-                  <span className="font-mono text-sm text-muted-foreground">{progressPct}%</span>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <BookOpen className="h-4 w-4 text-primary" /> Learning Journey
+                </CardTitle>
+                <div className="pt-1">
+                  <ProgressBar current={completedCount} total={6} />
                 </div>
-                <Progress value={progressPct} className="h-1.5 mt-2" />
               </CardHeader>
               <CardContent>
                 <ul className="space-y-2.5">
                   {modules.map((m) => (
                     <li key={m.id} className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2.5">
+                      <div className="flex items-center gap-2.5 min-w-0">
                         {m.completed ? (
                           <CheckCircle2 className="h-4 w-4 shrink-0 text-primary" />
                         ) : m.visited ? (
@@ -240,7 +264,8 @@ const Account = () => {
                         ) : (
                           <Circle className="h-4 w-4 shrink-0 text-muted-foreground/30" />
                         )}
-                        <span className={`text-sm ${m.completed ? "text-foreground" : m.visited ? "text-muted-foreground" : "text-muted-foreground/50"}`}>
+                        <m.icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
+                        <span className={`text-sm truncate ${m.completed ? "text-foreground" : m.visited ? "text-muted-foreground" : "text-muted-foreground/50"}`}>
                           <span className="text-muted-foreground/60 text-xs mr-1.5">0{m.id}</span>
                           {m.title}
                         </span>
@@ -259,36 +284,8 @@ const Account = () => {
           {/* Investment Ability Radar */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
             <Card className="h-full">
-              <CardHeader className="pb-1">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-primary" /> Investment Ability
-                </CardTitle>
-                <p className="text-xs text-muted-foreground mt-0.5">Scores reflect modules, backtests and scenarios</p>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={230}>
-                  <RadarChart cx="50%" cy="50%" outerRadius="68%" data={abilityData}>
-                    <PolarGrid stroke="hsl(var(--border))" />
-                    <PolarAngleAxis dataKey="dimension" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} />
-                    <PolarRadiusAxis angle={30} domain={[0, 10]} tick={false} axisLine={false} />
-                    <Radar
-                      name="Ability"
-                      dataKey="score"
-                      stroke="hsl(var(--primary))"
-                      fill="hsl(var(--primary))"
-                      fillOpacity={0.18}
-                      strokeWidth={2}
-                    />
-                  </RadarChart>
-                </ResponsiveContainer>
-                <div className="grid grid-cols-5 gap-1 mt-1">
-                  {abilityData.map((d) => (
-                    <div key={d.dimension} className="text-center">
-                      <p className="text-[9px] text-muted-foreground/70 leading-tight">{d.dimension}</p>
-                      <p className="font-mono text-xs text-foreground">{d.score.toFixed(1)}</p>
-                    </div>
-                  ))}
-                </div>
+              <CardContent className="pt-6">
+                <AbilityRadarWidget />
               </CardContent>
             </Card>
           </motion.div>
@@ -299,34 +296,33 @@ const Account = () => {
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2">
                   <Award className="h-4 w-4 text-primary" /> Badges
-                  <span className="ml-auto text-xs font-normal text-muted-foreground">{earnedCount}/{badges.length} earned</span>
+                  <span className="ml-auto text-xs font-normal text-muted-foreground">{earnedCount}/{BADGES.length} earned</span>
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 gap-2.5">
-                  {badges.map((b) => {
-                    const Icon = b.icon;
-                    return (
-                      <div
-                        key={b.label}
-                        className={`relative rounded-xl border p-3 transition-all ${
-                          b.earned ? "border-primary/30 bg-primary/5" : "border-border bg-secondary/20 opacity-45"
-                        }`}
-                      >
-                        <div className="flex items-start gap-2.5">
-                          <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${b.earned ? "bg-primary/15" : "bg-secondary"}`}>
-                            <Icon className={`h-3.5 w-3.5 ${b.earned ? "text-primary" : "text-muted-foreground"}`} />
+                <BadgeDisplay compact />
+                {nextBadges.length > 0 && (
+                  <div className="mt-3 pt-3 border-t border-border space-y-2">
+                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground/70">Next up</p>
+                    {nextBadges.map(({ badge, current, target }) => (
+                      <div key={badge.id} className="flex items-center gap-2">
+                        <span className="text-sm shrink-0" title={badge.desc}>{badge.icon}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between text-[11px] mb-0.5">
+                            <span className="font-medium text-foreground truncate">{badge.name}</span>
+                            <span className="text-muted-foreground shrink-0 ml-2">{Math.min(current, target)}/{target}</span>
                           </div>
-                          <div className="min-w-0">
-                            <p className="text-xs font-medium text-foreground leading-tight">{b.label}</p>
-                            <p className="text-[10px] text-muted-foreground mt-0.5 leading-tight">{b.description}</p>
+                          <div className="h-1.5 w-full rounded-full bg-secondary overflow-hidden">
+                            <div
+                              className="h-full rounded-full bg-primary"
+                              style={{ width: `${Math.min(100, (current / target) * 100)}%` }}
+                            />
                           </div>
                         </div>
-                        {b.earned && <span className="absolute top-2 right-2 h-1.5 w-1.5 rounded-full bg-primary" />}
                       </div>
-                    );
-                  })}
-                </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </motion.div>
@@ -387,7 +383,7 @@ const Account = () => {
               <CardContent>
                 <div className="flex flex-wrap gap-2">
                   {knowledgePoints.map((kp, i) => (
-                    <span key={i} className="inline-flex items-center gap-1 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
+                    <span key={i} className="inline-flex items-center gap-1 rounded-none border-2 border-foreground bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
                       <CheckCircle2 className="h-3 w-3" />
                       {knowledgeLabels[kp.activity_id] || kp.activity_id}
                     </span>
@@ -398,6 +394,8 @@ const Account = () => {
           </motion.div>
         )}
       </div>
+
+      <AvatarPicker isOpen={pickerOpen} onClose={() => setPickerOpen(false)} />
     </AppLayout>
   );
 };

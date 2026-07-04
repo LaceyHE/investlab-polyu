@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Flame, Trophy, ChevronDown, ChevronUp, Pencil } from 'lucide-react';
 import { useGamification, LEVELS, BADGES, getLevelInfo } from '@/contexts/GamificationContext';
 import { AvatarDisplay, AvatarPicker } from '@/components/gamification/AvatarSystem';
+import { AbilityRadarWidget } from '@/components/gamification/AbilityRadarWidget';
 
 // ─── XP BAR ──────────────────────────────────────────────────────────────────
 
@@ -186,6 +187,10 @@ export function GamificationSidebar() {
       <DailyXPBar />
       <XPBar />
       <StreakWidget />
+
+      <div className="p-3 rounded-none border-2 border-foreground bg-card shadow-[2px_2px_0_hsl(var(--foreground))]">
+        <AbilityRadarWidget compact />
+      </div>
 
       <div className="p-3 rounded-none border-2 border-foreground bg-card shadow-[2px_2px_0_hsl(var(--foreground))]">
         <div className="flex items-center gap-1.5 mb-3">

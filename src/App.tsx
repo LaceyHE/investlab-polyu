@@ -30,9 +30,9 @@ import CaseDetail from "./pages/CaseDetail";
 const queryClient = new QueryClient();
 
 const App = () => (
-  <GamificationProvider>
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
+  <AuthProvider>
+    <GamificationProvider>
+      <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <Toaster />
           <Sonner />
@@ -63,9 +63,9 @@ const App = () => (
             </Routes>
           </BrowserRouter>
         </TooltipProvider>
-      </AuthProvider>
-    </QueryClientProvider>
-  </GamificationProvider>
+      </QueryClientProvider>
+    </GamificationProvider>
+  </AuthProvider>
 );
 
 export default App;

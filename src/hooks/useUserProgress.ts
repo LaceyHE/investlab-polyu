@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useGamification } from "@/contexts/GamificationContext";
 
 export interface ProgressRecord {
   activity_type: string;
@@ -11,6 +12,8 @@ export interface ProgressRecord {
 
 export const useUserProgress = () => {
   const { user } = useAuth();
+  const { state } = useGamification();
+  const avatarId = state.avatarId ?? "default";
   const [progress, setProgress] = useState<ProgressRecord[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -20,21 +23,22 @@ export const useUserProgress = () => {
     const { data } = await supabase
       .from("user_progress")
       .select("activity_type, activity_id, metadata, created_at")
-      .eq("user_id", user.id);
+      .eq("user_id", user.id)
+      .eq("avatar_id", avatarId);
     setProgress((data as ProgressRecord[]) ?? []);
     setLoading(false);
-  }, [user]);
+  }, [user, avatarId]);
 
   useEffect(() => { fetchProgress(); }, [fetchProgress]);
 
   const markComplete = useCallback(async (activityType: string, activityId: string, metadata: Record<string, unknown> = {}) => {
     if (!user) return;
     await supabase.from("user_progress").upsert(
-      { user_id: user.id, activity_type: activityType, activity_id: activityId, metadata } as any,
-      { onConflict: "user_id,activity_type,activity_id" }
+      { user_id: user.id, avatar_id: avatarId, activity_type: activityType, activity_id: activityId, metadata } as any,
+      { onConflict: "user_id,avatar_id,activity_type,activity_id" }
     );
     await fetchProgress();
-  }, [user, fetchProgress]);
+  }, [user, avatarId, fetchProgress]);
 
   const completedModules = progress
     .filter((p) => p.activity_type === "module_complete")
