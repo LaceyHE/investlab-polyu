@@ -108,6 +108,7 @@ const quiz: QuizQuestion[] = [
       "Buy & Hold — drawdowns should always be avoided",
     ],
     correct: 1,
+    explanation: "Mean reversion strategies bet that prices swing back toward their average — so a deep drawdown reads as an opportunity, not a warning.",
   },
   {
     q: "A Trend Follower is most attracted to a stock showing…",
@@ -117,6 +118,7 @@ const quiz: QuizQuestion[] = [
       "A flat, low-volatility price that barely moves",
     ],
     correct: 0,
+    explanation: "Trend followers ride existing momentum — they want confirmation that a move is already underway, not a bet that it will reverse.",
   },
   {
     q: "Why does the very same stock get opposite labels depending on the lens?",
@@ -126,6 +128,7 @@ const quiz: QuizQuestion[] = [
       "Because each strategy cares about completely different signals",
     ],
     correct: 2,
+    explanation: "The price data is the same for every lens — what differs is which signal each strategy weighs (momentum vs. reversion vs. stability), so the same stock gets read differently.",
   },
 ];
 
@@ -298,7 +301,7 @@ const ModuleThree = () => {
             questions={quiz}
             locked={!allLensesSeen}
             lockedHint={`👆 View all three strategy lenses to see how the same stocks get re-labelled — then the knowledge check unlocks. ${viewedLenses.length}/3 seen.`}
-            onResult={({ allCorrect }) => setQuizPassed(allCorrect)}
+            onResult={({ allAnswered }) => setQuizPassed(allAnswered)}
           />
         </div>
 

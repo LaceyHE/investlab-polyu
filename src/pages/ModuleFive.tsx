@@ -18,6 +18,7 @@ const quiz: QuizQuestion[] = [
       "Mean reversion positions — they always catch the exact bottom",
     ],
     correct: 1,
+    explanation: "Buy & Hold positions have no exit mechanism built in, so when a shock hits, they stay put and absorb the drawdown in full.",
   },
   {
     q: "This module reframes how you see your portfolio. You're not holding 6 stocks — you're holding a…",
@@ -27,6 +28,7 @@ const quiz: QuizQuestion[] = [
       "single concentrated bet on technology",
     ],
     correct: 0,
+    explanation: "Each holding contributes to your overall volatility and risk exposure — that combined profile is what actually determines how your portfolio behaves, not any single stock.",
   },
   {
     q: "Switching from a Normal to a Shock environment, your portfolio's volatility…",
@@ -36,6 +38,7 @@ const quiz: QuizQuestion[] = [
       "rises sharply (here, from ~12% to ~31%)",
     ],
     correct: 2,
+    explanation: "Crises are periods of sharply elevated volatility, not calm — the simulator shows this portfolio's volatility jumping from roughly 12% to 31% under Shock conditions.",
   },
 ];
 
@@ -216,7 +219,7 @@ const ModuleFive = () => {
             questions={quiz}
             locked={!allEnvsSeen}
             lockedHint={`👆 Cycle through all three environments (Normal · Trending · Shock) to see how your portfolio behaves — then the knowledge check unlocks. ${exploredEnvs.length}/3 seen.`}
-            onResult={({ allCorrect }) => setQuizPassed(allCorrect)}
+            onResult={({ allAnswered }) => setQuizPassed(allAnswered)}
           />
         </div>
 

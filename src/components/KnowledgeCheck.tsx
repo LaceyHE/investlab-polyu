@@ -7,6 +7,8 @@ export interface QuizQuestion {
   options: string[];
   /** Index of the correct option. Vary this across questions — don't always use the same slot. */
   correct: number;
+  /** Shown after the question is answered, explaining why the correct option is correct. */
+  explanation?: string;
 }
 
 interface KnowledgeCheckProps {
@@ -71,6 +73,16 @@ const KnowledgeCheck = ({ questions, locked = false, lockedHint, onResult }: Kno
                     );
                   })}
                 </div>
+                {answered && item.explanation && (
+                  <motion.p
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-3 text-sm text-muted-foreground leading-relaxed border-t border-border pt-3"
+                  >
+                    <strong className="text-foreground">Why: </strong>
+                    {item.explanation}
+                  </motion.p>
+                )}
               </div>
             );
           })}
@@ -84,7 +96,7 @@ const KnowledgeCheck = ({ questions, locked = false, lockedHint, onResult }: Kno
               <p className="text-sm text-foreground leading-relaxed">
                 {allCorrect
                   ? "🎉 All correct — you've got it. Ready to move on."
-                  : "Close — review the highlighted answers above, then you'll be ready to continue."}
+                  : "You've answered every question — review the explanations above, then continue whenever you're ready."}
               </p>
             </motion.div>
           )}

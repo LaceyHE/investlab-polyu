@@ -65,6 +65,7 @@ const quiz: QuizQuestion[] = [
       "A potential buying opportunity at a discount",
     ],
     correct: 2,
+    explanation: "If the business itself hasn't changed, a fundamental investor sees the price drop as the stock becoming cheaper relative to its unchanged value — a discount, not a red flag.",
   },
   {
     q: "What is the single core idea of this module?",
@@ -74,6 +75,7 @@ const quiz: QuizQuestion[] = [
       "You should always buy after a 15% drop",
     ],
     correct: 0,
+    explanation: "No single lens is 'correct' — a fundamental investor and a momentum investor can look at the exact same 15% drop and reach opposite conclusions, because they're weighing different signals.",
   },
   {
     q: "A momentum investor mainly pays attention to…",
@@ -83,6 +85,7 @@ const quiz: QuizQuestion[] = [
       "Whether the dividend payout is safe",
     ],
     correct: 1,
+    explanation: "Momentum investing is built around price action itself — how fast and in which direction a stock is moving — rather than the underlying business fundamentals.",
   },
 ];
 
@@ -244,7 +247,7 @@ const ModuleOne = () => {
             questions={quiz}
             locked={!allExplored}
             lockedHint={`👆 Explore all three lenses above to unlock the knowledge check. ${explored.length}/${approaches.length} done.`}
-            onResult={({ allCorrect }) => setQuizPassed(allCorrect)}
+            onResult={({ allAnswered }) => setQuizPassed(allAnswered)}
           />
         </div>
 
