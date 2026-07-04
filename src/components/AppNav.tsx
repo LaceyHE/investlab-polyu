@@ -3,11 +3,11 @@ import { BookOpen, Route, FlaskConical, Compass, User, LogOut, TrendingUp, Netwo
 import { useAuth } from "@/contexts/AuthContext";
 const navItems = [
   { to: "/", icon: BookOpen, label: "Home", hover: "hover:bg-[var(--accent-green)]" },
-  { to: "/finsignal", icon: TrendingUp, label: "Market Literacy", hover: "hover:bg-[var(--accent-blue)]" },
   { to: "/learning-path", icon: Route, label: "Learning Path", hover: "hover:bg-[var(--accent-violet)]" },
+  { to: "/finsignal", icon: TrendingUp, label: "Market Literacy", hover: "hover:bg-[var(--accent-blue)]" },
+  { to: "/causal-lab", icon: Network, label: "Causal Lab", hover: "hover:bg-[var(--accent-orange)]" },
   { to: "/sandbox", icon: FlaskConical, label: "Sandbox", hover: "hover:bg-[var(--accent-yellow)]" },
   { to: "/scenarios", icon: Compass, label: "Scenarios", hover: "hover:bg-[var(--accent-pink)]" },
-  { to: "/causal-lab", icon: Network, label: "Causal Lab", hover: "hover:bg-[var(--accent-orange)]" },
   { to: "/account", icon: User, label: "Hub", hover: "hover:bg-[var(--accent-blue)]" },
 ];
 

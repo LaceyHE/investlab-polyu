@@ -8,20 +8,20 @@ import { GamificationSidebar } from "@/components/gamification/XPSidebar";
 
 const hubCards = [
   {
-    to: "/finsignal",
-    icon: <TrendingUp className="h-6 w-6" />,
-    title: "Market Literacy",
-    desc: "AI-powered financial news intelligence — real-time sentiment analysis, market signals, and financial statement insights.",
-    cta: "Explore Signals",
-    accent: "var(--accent-blue)",
-  },
-  {
     to: "/learning-path",
     icon: <Route className="h-6 w-6" />,
     title: "Learning Path",
     desc: "Master 6 modules of strategy-driven investing — from price illusions to full portfolio thinking.",
     cta: "Start Learning",
     accent: "var(--accent-violet)",
+  },
+  {
+    to: "/finsignal",
+    icon: <TrendingUp className="h-6 w-6" />,
+    title: "Market Literacy",
+    desc: "AI-powered financial news intelligence — real-time sentiment analysis, market signals, and financial statement insights.",
+    cta: "Explore Signals",
+    accent: "var(--accent-blue)",
   },
   {
     to: "/causal-lab",
