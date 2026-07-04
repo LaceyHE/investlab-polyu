@@ -6,6 +6,7 @@
 
 ## Live deployment
 
+- **Lovable**: https://investlab-polyu.lovable.app/
 - **Vercel**: https://investlab-polyu-beta.vercel.app
 
 ## How can I edit this code?
