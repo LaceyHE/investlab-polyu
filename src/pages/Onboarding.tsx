@@ -6,18 +6,21 @@ import { AVATARS, useGamification } from "@/contexts/GamificationContext";
 import { Button } from "@/components/ui/button";
 
 const Onboarding = () => {
-  const { setAvatar, state } = useGamification();
+  const { setAvatar, setExperienceLevel, state } = useGamification();
   const navigate = useNavigate();
   const [selectedId, setSelectedId] = useState<string>(state.avatarId ?? "owl");
   const [displayName, setDisplayName] = useState(state.displayName ?? "");
+  const [experienceLevel, setExperienceLevelInput] = useState<"novice" | "experienced" | null>(state.experienceLevel ?? null);
 
   const handleStart = () => {
     setAvatar(selectedId, displayName.trim() || "Investor");
+    setExperienceLevel(experienceLevel ?? "novice");
     navigate("/", { replace: true });
   };
 
   const handleSkip = () => {
     setAvatar("owl", "Investor");
+    setExperienceLevel("novice");
     navigate("/", { replace: true });
   };
 
@@ -105,6 +108,33 @@ const Onboarding = () => {
           ) : null;
         })()}
 
+        {/* Experience level */}
+        <div className="mb-8">
+          <label className="block text-sm font-medium text-foreground mb-2">
+            Are you new to investing?
+          </label>
+          <div className="grid grid-cols-2 gap-3">
+            {([
+              { id: "novice" as const, label: "I'm a beginner", desc: "Walk me through it step by step" },
+              { id: "experienced" as const, label: "I have some experience", desc: "Let me jump around freely" },
+            ]).map((opt) => (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => setExperienceLevelInput(opt.id)}
+                className={`text-left p-3 rounded-xl border-2 transition-all ${
+                  experienceLevel === opt.id
+                    ? "border-primary bg-primary/10"
+                    : "border-border bg-card hover:border-primary/30"
+                }`}
+              >
+                <div className="text-sm font-semibold text-foreground">{opt.label}</div>
+                <div className="text-xs text-muted-foreground mt-0.5">{opt.desc}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Display name input */}
         <div className="mb-8">
           <label className="block text-sm font-medium text-foreground mb-2">
@@ -125,7 +155,7 @@ const Onboarding = () => {
           <Button
             onClick={handleStart}
             className="w-full h-11 text-base font-semibold"
-            disabled={!selectedId}
+            disabled={!selectedId || !experienceLevel}
           >
             Start Learning
             <ArrowRight className="ml-2 h-4 w-4" />

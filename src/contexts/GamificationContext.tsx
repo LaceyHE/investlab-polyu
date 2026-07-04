@@ -124,17 +124,20 @@ export function hasProgress(p: AvatarProgress | undefined): boolean {
   return !!p && p.xp > 0;
 }
 
+export type ExperienceLevel = 'novice' | 'experienced';
+
 // Truly global fields (not tied to any one avatar) plus the per-avatar buckets.
 interface State {
   activeAvatarId: string | null;
   displayName: string;
   onboardingComplete: boolean;
+  experienceLevel: ExperienceLevel | null;
   profiles: Record<string, AvatarProgress>;
   pendingToasts: Toast[];
 }
 
 const DEFAULT: State = {
-  activeAvatarId: null, displayName: '', onboardingComplete: false,
+  activeAvatarId: null, displayName: '', onboardingComplete: false, experienceLevel: null,
   profiles: {}, pendingToasts: [],
 };
 
@@ -163,6 +166,7 @@ type Action =
   | { type: 'CHECK_NIGHT' }
   | { type: 'DISMISS_TOAST'; id: number }
   | { type: 'SET_AVATAR'; avatarId: string; displayName: string }
+  | { type: 'SET_EXPERIENCE_LEVEL'; level: ExperienceLevel }
   | { type: 'COMPLETE_ONBOARDING'; avatarId: string; displayName: string }
   | { type: 'LOAD_AVATAR_PROFILE'; avatarId: string; profile: AvatarProgress }
   | { type: 'LOAD'; state: Partial<State> }
@@ -276,6 +280,8 @@ function reducer(state: State, action: Action): State {
       return { ...state, pendingToasts: state.pendingToasts.filter(t => t.id !== action.id) };
     case 'SET_AVATAR':
       return ensureAvatar({ ...state, activeAvatarId: action.avatarId, displayName: action.displayName }, action.avatarId);
+    case 'SET_EXPERIENCE_LEVEL':
+      return { ...state, experienceLevel: action.level };
     case 'COMPLETE_ONBOARDING':
       return ensureAvatar({ ...state, activeAvatarId: action.avatarId, displayName: action.displayName, onboardingComplete: true }, action.avatarId);
     case 'LOAD_AVATAR_PROFILE':
@@ -345,6 +351,7 @@ type FlatState = AvatarProgress & {
   avatarId: string | null;
   displayName: string;
   onboardingComplete: boolean;
+  experienceLevel: ExperienceLevel | null;
   pendingToasts: Toast[];
   completedModuleIds: string[];
 };
@@ -369,6 +376,7 @@ interface GamCtx {
   recordScenario: () => void;
   dismissToast: (id: number) => void;
   setAvatar: (avatarId: string, displayName: string) => void;
+  setExperienceLevel: (level: ExperienceLevel) => void;
   completeOnboarding: (avatarId: string, displayName: string) => void;
   resetProgress: () => void;
 }
@@ -478,6 +486,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
   const recordScenario = useCallback(() => { dispatch({ type: 'INCREMENT', stat: 'scenariosCompleted' }); dispatch({ type: 'AWARD_XP', amount: XP_REWARDS.SCENARIO_COMPLETED, reason: 'Scenario completed! +70 XP' }); }, []);
   const dismissToast = useCallback((id: number) => dispatch({ type: 'DISMISS_TOAST', id }), []);
   const setAvatar = useCallback((avatarId: string, displayName: string) => dispatch({ type: 'SET_AVATAR', avatarId, displayName }), []);
+  const setExperienceLevel = useCallback((level: ExperienceLevel) => dispatch({ type: 'SET_EXPERIENCE_LEVEL', level }), []);
   const completeOnboarding = useCallback((avatarId: string, displayName: string) => dispatch({ type: 'COMPLETE_ONBOARDING', avatarId, displayName }), []);
   const resetProgress = useCallback(() => { if (window.confirm('Reset all progress? This cannot be undone.')) dispatch({ type: 'RESET' }); }, []);
   const getAvatarProgress = useCallback((avatarId: string) => state.profiles[avatarId] ?? DEFAULT_AVATAR_PROGRESS, [state.profiles]);
@@ -492,6 +501,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
     avatarId: state.activeAvatarId,
     displayName: state.displayName,
     onboardingComplete: state.onboardingComplete,
+    experienceLevel: state.experienceLevel,
     pendingToasts: state.pendingToasts,
     completedModuleIds,
   };
@@ -501,7 +511,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
     viewAvatarId, setViewAvatarId, playedAvatarIds, getAvatarProgress,
     awardXP, recordConceptLearned, recordArticleRead, recordModuleSection, completeModule,
     recordQuizCorrect, recordQuizPerfect, recordCaseStudied, recordBacktest, recordScenario,
-    dismissToast, setAvatar, completeOnboarding, resetProgress,
+    dismissToast, setAvatar, setExperienceLevel, completeOnboarding, resetProgress,
   };
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

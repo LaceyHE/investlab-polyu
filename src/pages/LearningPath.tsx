@@ -59,6 +59,7 @@ const coreModules = [
 const LearningPath = () => {
   const { state, levelInfo } = useGamification();
   const completed = state.completedModuleIds ?? [];
+  const isExperienced = state.experienceLevel === "experienced";
 
   const coreCompletedCount = coreModules.filter((m) => completed.includes(m.id)).length;
   const foundationsDone = completed.includes("foundations");
@@ -67,10 +68,11 @@ const LearningPath = () => {
   // First not-yet-completed module becomes the "active" one
   const activeIndex = coreModules.findIndex((m) => !completed.includes(m.id));
 
-  // Sequential unlock: a module opens only once the previous one is completed.
+  // Sequential unlock: a module opens only once the previous one is completed — unless the
+  // user told us during onboarding they're experienced, in which case every module is open.
   const getStatus = (mod: typeof coreModules[number], i: number) => {
     if (completed.includes(mod.id)) return "completed" as const;
-    if (i === activeIndex) return "active" as const;
+    if (isExperienced || i === activeIndex) return "active" as const;
     return "locked" as const;
   };
 
@@ -98,6 +100,25 @@ const LearningPath = () => {
             <ProgressBar current={coreCompletedCount} total={coreModules.length} label="Modules completed" />
           </div>
         </motion.div>
+
+        {/* Experienced users get a shortcut straight to hands-on practice */}
+        {isExperienced && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8"
+          >
+            <Link to="/sandbox" className="block group">
+              <div className="flex items-center justify-between gap-4 rounded-none border-2 border-foreground bg-teal/10 p-5 shadow-[3px_3px_0_hsl(var(--foreground))] transition-all duration-100 hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0_hsl(var(--foreground))]">
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wider text-teal mb-1">You told us you've got experience</p>
+                  <h3 className="font-serif text-lg text-foreground">Skip ahead — go straight to the Sandbox</h3>
+                </div>
+                <ArrowRight className="h-5 w-5 shrink-0 text-teal transition-transform group-hover:translate-x-0.5" />
+              </div>
+            </Link>
+          </motion.div>
+        )}
 
         {/* Start Here — Foundations */}
         <motion.div
@@ -163,7 +184,7 @@ const LearningPath = () => {
               description="Test strategies freely using the same stock universe with all strategy constraints active. Unlocked after core lessons."
               icon={<FlaskConical className="h-5 w-5" />}
               variant="sandbox"
-              locked={!allCoreDone}
+              locked={!allCoreDone && !isExperienced}
               to="/sandbox"
             />
             <SideModuleCard
@@ -171,7 +192,7 @@ const LearningPath = () => {
               description="Explore historical market scenarios with real data. Build portfolios and understand how environments shape outcomes."
               icon={<History className="h-5 w-5" />}
               variant="stress"
-              locked={!allCoreDone}
+              locked={!allCoreDone && !isExperienced}
               to="/scenarios"
             />
 

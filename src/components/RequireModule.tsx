@@ -16,6 +16,12 @@ const RequireModule = ({ prev, children }: RequireModuleProps) => {
   const { state } = useGamification();
   const completed = state.completedModuleIds ?? [];
 
+  // Experienced users opted out of the sequential walkthrough during onboarding — let them
+  // jump to any module directly instead of forcing them through the prerequisite chain.
+  if (state.experienceLevel === "experienced") {
+    return <>{children}</>;
+  }
+
   if (!completed.includes(prev)) {
     return <Navigate to="/learning-path" replace />;
   }
