@@ -20,11 +20,20 @@ export const useUserProgress = () => {
   const fetchProgress = useCallback(async () => {
     if (!user) { setProgress([]); return; }
     setLoading(true);
-    const { data } = await supabase
+    let { data, error } = await supabase
       .from("user_progress")
       .select("activity_type, activity_id, metadata, created_at")
       .eq("user_id", user.id)
       .eq("avatar_id", avatarId);
+    if (error) {
+      // The `avatar_id` column may not exist yet on this database (its migration hasn't been
+      // deployed) — fall back to the pre-per-avatar query so activity still shows instead of
+      // silently going blank.
+      ({ data } = await supabase
+        .from("user_progress")
+        .select("activity_type, activity_id, metadata, created_at")
+        .eq("user_id", user.id));
+    }
     setProgress((data as ProgressRecord[]) ?? []);
     setLoading(false);
   }, [user, avatarId]);
@@ -33,10 +42,17 @@ export const useUserProgress = () => {
 
   const markComplete = useCallback(async (activityType: string, activityId: string, metadata: Record<string, unknown> = {}) => {
     if (!user) return;
-    await supabase.from("user_progress").upsert(
+    const { error } = await supabase.from("user_progress").upsert(
       { user_id: user.id, avatar_id: avatarId, activity_type: activityType, activity_id: activityId, metadata } as any,
       { onConflict: "user_id,avatar_id,activity_type,activity_id" }
     );
+    if (error) {
+      // Same fallback as fetchProgress: write without avatar_id until that migration lands.
+      await supabase.from("user_progress").upsert(
+        { user_id: user.id, activity_type: activityType, activity_id: activityId, metadata } as any,
+        { onConflict: "user_id,activity_type,activity_id" }
+      );
+    }
     await fetchProgress();
   }, [user, avatarId, fetchProgress]);
 
