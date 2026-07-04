@@ -71,7 +71,7 @@ const ModuleFive = () => {
   const [exploredEnvs, setExploredEnvs] = useState<EnvToggle[]>(["neutral"]);
   const [quizPassed, setQuizPassed] = useState(false);
   const { markComplete } = useUserProgress();
-  const { completeModule } = useGamification();
+  const { completeModule, recordConceptLearned } = useGamification();
   const tracked = useRef(false);
 
   const selectEnv = (id: EnvToggle) => {
@@ -86,8 +86,9 @@ const ModuleFive = () => {
       tracked.current = true;
       markComplete("module_view", "module-5");
       markComplete("knowledge_point", "risk-exposure", { module: 5 });
+      recordConceptLearned();
     }
-  }, [markComplete]);
+  }, [markComplete, recordConceptLearned]);
 
   const strategyMix = [
     { strategy: "Trend Following", pct: 42, color: "bg-primary" },

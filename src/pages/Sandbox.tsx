@@ -17,6 +17,7 @@ import HoldingTimeline from "@/components/sandbox/HoldingTimeline";
 import { useMarketPrices, useStrategyBacktest, scanAllocationSharpe, type StrategyType } from "@/hooks/useStrategyBacktest";
 import { computeRadarScores } from "@/components/sandbox/RadarScoring";
 import { useUserProgress } from "@/hooks/useUserProgress";
+import { useGamification } from "@/contexts/GamificationContext";
 import { DEFAULT_PERIOD, type TimePeriod } from "@/data/time-periods";
 
 // ── Slider config per strategy ──────────────────────────────────────────────
@@ -87,6 +88,7 @@ const Sandbox = () => {
   });
   const [period, setPeriod] = useState<TimePeriod>(DEFAULT_PERIOD);
   const { markComplete } = useUserProgress();
+  const { recordBacktest } = useGamification();
   const trackedStrategy = useRef<string | null>(null);
 
   const { data: marketData, isLoading } = useMarketPrices(period);
@@ -137,8 +139,9 @@ const Sandbox = () => {
         strategy: strategyDef?.name || selectedStrategy,
         param: currentParam,
       });
+      recordBacktest();
     }
-  }, [selectedStrategy, result, markComplete, strategyDef, currentParam]);
+  }, [selectedStrategy, result, markComplete, strategyDef, currentParam, recordBacktest]);
 
   const handleParamChange = (value: number[]) => {
     if (!selectedStrategy) return;

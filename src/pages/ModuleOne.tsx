@@ -88,7 +88,7 @@ const quiz: QuizQuestion[] = [
 
 const ModuleOne = () => {
   const { markComplete } = useUserProgress();
-  const { completeModule } = useGamification();
+  const { completeModule, recordConceptLearned } = useGamification();
   const tracked = useRef(false);
 
   const [open, setOpen] = useState<string | null>(null);
@@ -108,6 +108,7 @@ const ModuleOne = () => {
       const next = [...explored, a.id];
       setExplored(next);
       markComplete("knowledge_point", a.id, { module: 1 });
+      recordConceptLearned();
     }
   };
 

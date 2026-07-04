@@ -135,7 +135,7 @@ const ModuleThree = () => {
   const [viewedLenses, setViewedLenses] = useState<StrategyLens[]>(["trendfollower"]);
   const [quizPassed, setQuizPassed] = useState(false);
   const { markComplete } = useUserProgress();
-  const { completeModule } = useGamification();
+  const { completeModule, recordConceptLearned } = useGamification();
   const tracked = useRef(false);
 
   useEffect(() => {
@@ -143,8 +143,9 @@ const ModuleThree = () => {
       tracked.current = true;
       markComplete("module_view", "module-3");
       markComplete("knowledge_point", "stock-filtering", { module: 3 });
+      recordConceptLearned();
     }
-  }, [markComplete]);
+  }, [markComplete, recordConceptLearned]);
 
   const selectLens = (l: StrategyLens) => {
     setLens(l);

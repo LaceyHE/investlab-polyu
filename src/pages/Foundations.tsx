@@ -97,7 +97,7 @@ const quiz: QuizQuestion[] = [
 
 const Foundations = () => {
   const { markComplete } = useUserProgress();
-  const { completeModule } = useGamification();
+  const { completeModule, recordConceptLearned } = useGamification();
   const tracked = useRef(false);
 
   const [openLesson, setOpenLesson] = useState<string | null>(null);
@@ -117,6 +117,7 @@ const Foundations = () => {
       const next = [...readLessons, id];
       setReadLessons(next);
       markComplete("knowledge_point", id, { module: 0 });
+      recordConceptLearned();
     }
   };
 

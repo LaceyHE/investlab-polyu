@@ -10,7 +10,7 @@ const ModuleSix = () => {
   const [reflectionAnswer, setReflectionAnswer] = useState("");
   const [completed, setCompleted] = useState(false);
   const { markComplete } = useUserProgress();
-  const { completeModule } = useGamification();
+  const { completeModule, recordConceptLearned } = useGamification();
   const tracked = useRef(false);
 
   useEffect(() => {
@@ -18,8 +18,9 @@ const ModuleSix = () => {
       tracked.current = true;
       markComplete("module_view", "module-6");
       markComplete("knowledge_point", "behavioral-reflection", { module: 6 });
+      recordConceptLearned();
     }
-  }, [markComplete]);
+  }, [markComplete, recordConceptLearned]);
 
   return (
     <AppLayout>

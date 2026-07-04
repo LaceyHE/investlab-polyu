@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/AppLayout";
@@ -23,10 +23,11 @@ const Auth = () => {
   const [signupPassword, setSignupPassword] = useState("");
   const [signupName, setSignupName] = useState("");
 
-  if (user) {
-    navigate("/account", { replace: true });
-    return null;
-  }
+  useEffect(() => {
+    if (user) navigate("/account", { replace: true });
+  }, [user, navigate]);
+
+  if (user) return null;
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,21 +65,21 @@ const Auth = () => {
           className="w-full max-w-md"
         >
           <div className="flex items-center justify-center gap-2.5 mb-8">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-warm">
-              <BookOpen className="h-5 w-5 text-primary-foreground" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-none border-2 border-foreground bg-accent shadow-[2px_2px_0_hsl(var(--foreground))]">
+              <BookOpen className="h-5 w-5 text-accent-foreground" />
             </div>
-            <span className="font-serif text-2xl text-foreground">InvestLab</span>
+            <span className="font-pixel text-sm text-foreground">InvestLab</span>
           </div>
 
           <Card>
             <CardHeader className="pb-4">
-              <CardTitle className="text-center text-lg">Welcome</CardTitle>
+              <CardTitle className="text-center text-lg font-serif uppercase tracking-wide">Welcome</CardTitle>
             </CardHeader>
             <CardContent>
               <Tabs defaultValue="login">
-                <TabsList className="grid w-full grid-cols-2 mb-6">
-                  <TabsTrigger value="login">Sign In</TabsTrigger>
-                  <TabsTrigger value="signup">Sign Up</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-2 mb-6 rounded-none border-2 border-foreground bg-background p-0">
+                  <TabsTrigger value="login" className="rounded-none uppercase text-xs font-bold tracking-wide data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-none">Sign In</TabsTrigger>
+                  <TabsTrigger value="signup" className="rounded-none uppercase text-xs font-bold tracking-wide data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-none">Sign Up</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="login">
@@ -105,7 +106,7 @@ const Auth = () => {
                         placeholder="••••••••"
                       />
                     </div>
-                    <Button type="submit" className="w-full" disabled={loading}>
+                    <Button type="submit" className="w-full rounded-none border-2 border-foreground shadow-[2px_2px_0_hsl(var(--foreground))] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none uppercase font-bold tracking-wide" disabled={loading}>
                       {loading ? "Signing in…" : "Sign In"}
                     </Button>
                   </form>
@@ -147,7 +148,7 @@ const Auth = () => {
                         placeholder="Min 6 characters"
                       />
                     </div>
-                    <Button type="submit" className="w-full" disabled={loading}>
+                    <Button type="submit" className="w-full rounded-none border-2 border-foreground shadow-[2px_2px_0_hsl(var(--foreground))] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none uppercase font-bold tracking-wide" disabled={loading}>
                       {loading ? "Creating account…" : "Create Account"}
                     </Button>
                   </form>

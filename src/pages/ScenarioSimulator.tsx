@@ -20,6 +20,7 @@ import { useScenarioSimulation } from "@/hooks/useScenarioSimulation";
 import { usePushMessages } from "@/hooks/usePushMessages";
 import { getStocksForScenario, getIndustriesForScenario } from "@/data/scenario-stocks";
 import { useUserProgress } from "@/hooks/useUserProgress";
+import { useGamification } from "@/contexts/GamificationContext";
 
 const ScenarioSimulator = () => {
   const [selectedScenario, setSelectedScenario] = useState<ScenarioPreset | null>(null);
@@ -28,14 +29,16 @@ const ScenarioSimulator = () => {
   const [showVolatility, setShowVolatility] = useState(false);
   const [showSharpe, setShowSharpe] = useState(false);
   const { markComplete } = useUserProgress();
+  const { recordScenario } = useGamification();
   const trackedScenario = useRef<string | null>(null);
 
   useEffect(() => {
     if (selectedScenario && trackedScenario.current !== selectedScenario.id) {
       trackedScenario.current = selectedScenario.id;
       markComplete("scenario_run", selectedScenario.id, { scenario: selectedScenario.name });
+      recordScenario();
     }
-  }, [selectedScenario, markComplete]);
+  }, [selectedScenario, markComplete, recordScenario]);
 
   const scenarioStocks = useMemo(() => selectedScenario ? getStocksForScenario(selectedScenario.id) : [], [selectedScenario]);
   const scenarioIndustries = useMemo(() => selectedScenario ? getIndustriesForScenario(selectedScenario.id) : [], [selectedScenario]);
