@@ -1,9 +1,56 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Route, TrendingUp, Network, FlaskConical, Compass } from "lucide-react";
 import { AVATARS, useGamification } from "@/contexts/GamificationContext";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+
+const GUIDE_SECTIONS = [
+  {
+    group: "1. Learn the basics",
+    subtitle: "Start here to build your knowledge.",
+    items: [
+      {
+        icon: <Route className="h-5 w-5" />,
+        title: "Learning Path",
+        desc: "6 short modules that teach investing step by step. New here? Start with this.",
+      },
+      {
+        icon: <TrendingUp className="h-5 w-5" />,
+        title: "Market Literacy",
+        desc: "Read real financial news and see what it means, with easy AI explanations.",
+      },
+      {
+        icon: <Network className="h-5 w-5" />,
+        title: "CausalLab",
+        desc: "See how one event (like a rate hike) causes another. Learn how markets react.",
+      },
+    ],
+  },
+  {
+    group: "2. Practice like a real investor",
+    subtitle: "Try what you learned — no real money needed.",
+    items: [
+      {
+        icon: <FlaskConical className="h-5 w-5" />,
+        title: "Sandbox",
+        desc: "Build your own portfolio and test your strategy against real past market data.",
+      },
+      {
+        icon: <Compass className="h-5 w-5" />,
+        title: "Scenarios",
+        desc: "Face market crises (like a crash) and see how your choices would hold up.",
+      },
+    ],
+  },
+];
 
 const Onboarding = () => {
   const { setAvatar, setExperienceLevel, state } = useGamification();
@@ -11,10 +58,15 @@ const Onboarding = () => {
   const [selectedId, setSelectedId] = useState<string>(state.avatarId ?? "owl");
   const [displayName, setDisplayName] = useState(state.displayName ?? "");
   const [experienceLevel, setExperienceLevelInput] = useState<"novice" | "experienced" | null>(state.experienceLevel ?? null);
+  const [showGuide, setShowGuide] = useState(false);
 
   const handleStart = () => {
     setAvatar(selectedId, displayName.trim() || "Investor");
     setExperienceLevel(experienceLevel ?? "novice");
+    setShowGuide(true);
+  };
+
+  const handleEnter = () => {
     navigate("/", { replace: true });
   };
 
@@ -168,6 +220,59 @@ const Onboarding = () => {
           </button>
         </div>
       </motion.div>
+
+      {/* Quick guide modal — shown after picking avatar, before entering the site */}
+      <Dialog open={showGuide} onOpenChange={setShowGuide}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-2xl">
+              How <span className="text-gradient-warm">InvestLab</span> works
+            </DialogTitle>
+            <DialogDescription className="text-sm">
+              InvestLab has two simple parts: first you <strong>learn</strong>, then
+              you <strong>practice</strong>. Here is a quick tour so you know where to go.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-5 mt-2">
+            {GUIDE_SECTIONS.map((section) => (
+              <div key={section.group}>
+                <div className="mb-2">
+                  <h3 className="text-sm font-semibold text-foreground">{section.group}</h3>
+                  <p className="text-xs text-muted-foreground">{section.subtitle}</p>
+                </div>
+                <div className="space-y-2">
+                  {section.items.map((item) => (
+                    <div
+                      key={item.title}
+                      className="flex items-start gap-3 p-3 rounded-xl bg-secondary/40 border border-border"
+                    >
+                      <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                        {item.icon}
+                      </div>
+                      <div>
+                        <div className="text-sm font-semibold text-foreground">{item.title}</div>
+                        <div className="text-xs text-muted-foreground leading-relaxed">{item.desc}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+
+            <p className="text-xs text-muted-foreground">
+              Tip: as you learn and practice, you earn <strong>XP</strong> and{" "}
+              <strong>badges</strong>. You can check your progress anytime in the{" "}
+              <strong>Investor Hub</strong>.
+            </p>
+          </div>
+
+          <Button onClick={handleEnter} className="w-full h-11 text-base font-semibold mt-2">
+            Got it — let's start
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
