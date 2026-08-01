@@ -1,10 +1,6 @@
 # Welcome to your Lovable project
 
-## Project info
-
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
-
-## Live deployment
+##Deployment
 
 - **Lovable**: https://investlab-polyu.lovable.app/
 - **Vercel**: https://investlab-polyu-beta.vercel.app
@@ -15,7 +11,7 @@ There are several ways of editing your application.
 
 **Use Lovable**
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+Simply visit the [Lovable Project](https://lovable.dev/projects/xxxx) and start prompting.
 
 Changes made via Lovable will be committed automatically to this repo.
 
